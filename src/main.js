@@ -1,6 +1,6 @@
 (function () {
 
-    const Game = require('./Gane.js');
+    const Game = require('./Game.js');
 
     const elements = {
         game: document.getElementById('game'),
@@ -29,17 +29,18 @@
     }
 
     function create() {
-        const width = elements.width.value;
-        const height = elements.height.value;
-
         stop();
 
-        game = new Game(elements.game, width, height);
+        game = new Game(elements.game, 50, 50);
+
+        enable(elements.startButton);
     }
 
     function start() {
+        enable(elements.stopButton);
+
         disable(elements.createButton);
-        disable(elements.resetButton);
+        disable(elements.startButton);
 
         game.start();
     }
@@ -47,8 +48,9 @@
     function stop() {
         game && game.stop();
 
+        disable(elements.stopButton);
         enable(elements.createButton);
-        enable(elements.resetButton);
+        enable(elements.startButton);
     }
 
     function reset() {

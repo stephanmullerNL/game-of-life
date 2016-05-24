@@ -120,4 +120,4 @@ gulp.task( 'watch', [ 'sync' ], function () {
 } );
 
 // Task - Default
-gulp.task( 'default', ['watch']);
+gulp.task( 'default', ['css', 'js-dev', 'watch']);

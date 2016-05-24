@@ -8,8 +8,8 @@ module.exports = class {
         this.element = element;
         this.canvas = element.getContext('2d');
 
-        this.columns = width * 2 + 1;
-        this.rows = height * 2 + 1;
+        this.width = width;
+        this.height = height;
 
         this.tiles = this.createTiles(width, height);
         this.path = [];
@@ -17,8 +17,8 @@ module.exports = class {
         directions = {
             left: -1,
             right: 1,
-            up: -this.columns,
-            down: this.columns
+            up: -width,
+            down: width
         };
 
         this.renderCanvas();
@@ -27,11 +27,10 @@ module.exports = class {
     createTiles(width, height) {
         let tiles = [];
 
-        const amount = (width * 2 + 1) * (height * 2 + 1);
         const maxDimension = Math.max(width, height);
+        const amount = width * height;
 
-        const wallSize = Math.ceil(40 / maxDimension);
-        const roomSize = Math.floor((this.element.width - ((maxDimension + 1) * wallSize)) / maxDimension);
+        this.tileSize = (this.element.width - maxDimension) / maxDimension;
 
         for(let i = 0; i < amount; i++) {
             const col = this.getColumn(i);
@@ -39,11 +38,11 @@ module.exports = class {
 
             const tile = new Tile(
                 this.canvas,
-                0,
-                (Math.ceil(col / 2) * wallSize) + (Math.ceil(col / 2) - col % 2) * roomSize,
-                (Math.ceil(row / 2) * wallSize) + (Math.ceil(row / 2) - row % 2) * roomSize,
-                (col % 2) ? roomSize : wallSize,
-                (row % 2) ? roomSize : wallSize
+                false,
+                col * this.tileSize + col,
+                row * this.tileSize + row,
+                this.tileSize,
+                this.tileSize
             );
 
             tiles.push(tile);
@@ -67,7 +66,36 @@ module.exports = class {
     /*** Render game ***/
     renderCanvas() {
         this.canvas.clearRect(0, 0, this.element.width, this.element.height);
+
+        this.renderGrid();
+
         this.tiles.forEach((tile) => tile.draw());
+    }
+
+    renderGrid() {
+        this.canvas.lineWidth = '1';
+        this.canvas.strokeStyle = 'black';
+
+        const maxWidth = this.width * this.tileSize + this.width;
+        const maxHeight = this.width * this.tileSize + this.width;
+
+        for(let i = 1; i < this.width; i++) {
+            const offset = i * this.tileSize + i;
+
+            this.canvas.beginPath();
+            this.canvas.moveTo(offset, 0);
+            this.canvas.lineTo(offset, maxHeight);
+            this.canvas.stroke();
+        }
+
+        for(let i = 1; i < this.height; i++) {
+            const offset = i * this.tileSize + i;
+
+            this.canvas.beginPath();
+            this.canvas.moveTo(0, offset);
+            this.canvas.lineTo(maxWidth, offset);
+            this.canvas.stroke();
+        }
     }
 
     stop() {
@@ -76,21 +104,14 @@ module.exports = class {
 
     /*** Helpers ***/
     getColumn(tile) {
-        return Math.floor(tile % this.columns);
+        return Math.floor(tile % this.width);
     }
 
     getRow(tile) {
-        return Math.floor((tile) / this.columns);
+        return Math.floor(tile / this.width);
     }
 
     isAdjacent(tile, next) {
         return this.getRow(tile) === this.getRow(next) || this.getColumn(tile) === this.getColumn(next);
-    }
-
-    isEdge(tile) {
-        return this.getRow(tile) < 1 ||
-            this.getColumn(tile) < 1 ||
-            this.getRow(tile) > this.rows - 1 ||
-            this.getColumn(tile) > this.columns - 1;
     }
 };

@@ -1,11 +1,11 @@
-const colors = ['black', 'white'];
+const colors = ['white', 'black'];
 
 module.exports = class {
 
-    constructor(canvas, type, x, y, width, height) {
+    constructor(canvas, alive, x, y, width, height) {
         this.canvas = canvas;
 
-        this.type = type;
+        this.alive = alive;
         this.x = x;
         this.y = y;
         this.width = width;
@@ -15,7 +15,7 @@ module.exports = class {
     }
 
     draw(color) {
-        color = color || colors[this.type];
+        color = color || colors[+this.alive]; // Cast alive to an int
 
         this.canvas.fillStyle = color;
         this.canvas.fillRect(this.x, this.y, this.width, this.height);
@@ -31,8 +31,8 @@ module.exports = class {
         this.draw();
     }
 
-    setType(type) {
-        this.type = type;
+    setAlive(alive) {
+        this.alive = alive;
         this.draw();
     }
 };
