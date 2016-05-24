@@ -1,0 +1,39 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="dist/main.css">
+    </head>
+    <body>
+        <h1>Conway's Game of Life</h1>
+
+        <section>
+            <h2>Create world</h2>
+            <div class="clearfix">
+                <label>
+                    Width: <input type="text" value="10" id="width">
+                </label>
+                <label>
+                    Height: <input type="text" value="10" id="height">
+                </label>
+            </div>
+            <div class="clearfix">
+                <label>
+                    Start: <input type="text" value="1" id="start">
+                </label>
+                <label>
+                    Finish: <input type="text" value="439" id="finish" readonly="readonly">
+                </label>
+            </div>
+            <button id="create">Create new maze</button>
+            <button id="start" disabled="disabled">Start</button>
+            <button disabled="disabled" id="stop">Stop</button>
+        </section>
+
+        <canvas id="game" width="400" height="400"></canvas>
+
+        <footer>
+            <a href="https://github.com/picodealion/game-of-life/">github</a>
+        </footer>
+
+        <script src="dist/main.js"></script>
+    </body>
+</html>
