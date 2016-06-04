@@ -20,7 +20,7 @@ section {
 
 canvas {
     cursor: crosshair;
-    border: 1px solid black;
+    /*border: 1px solid black;*/
 }
 
 footer {

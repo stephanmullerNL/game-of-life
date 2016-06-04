@@ -1,67 +1,96 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-const Tile = require('./Tile.js');
-
-let directions;
-
 module.exports = class {
 
     constructor(element, width, height) {
+        const maxDimension = Math.max(width, height);
+
         this.element = element;
         this.canvas = element.getContext('2d');
 
         this.width = width;
         this.height = height;
 
-        this.tiles = this.createTiles(width, height);
-        this.path = [];
-
-        directions = {
-            left: -1,
-            right: 1,
-            up: -width,
-            down: width
-        };
-
-        this.renderCanvas();
-    }
-
-    createTiles(width, height) {
-        let tiles = [];
-
-        const maxDimension = Math.max(width, height);
-        const amount = width * height;
-
+        this.tiles = new Array(width * height).fill(0);
         this.tileSize = (this.element.width - maxDimension) / maxDimension;
 
-        for(let i = 0; i < amount; i++) {
-            const col = this.getColumn(i);
-            const row = this.getRow(i);
-
-            const tile = new Tile(
-                this.canvas,
-                false,
-                col * this.tileSize + col,
-                row * this.tileSize + row,
-                this.tileSize,
-                this.tileSize
-            );
-
-            tiles.push(tile);
-        }
-
-        return tiles;
+        this.renderCanvas();
     }
 
 
     /*** Play ***/
     start() {
-        // TODO
+        this._stopped = false;
+
+        // TODO: draw starting tiles
+        //const pattern = [121, 122, 123, 83, 42];
+        const pattern = [256, 257, 258, 259, 260, 261, 262, 263, 264, 265];
+        pattern.map((i) => this.tiles[i] = 1);
+
+        this.drawGeneration();
+
+        setTimeout(this.live.bind(this), 1000);
     }
 
-    getNextTile(tile, direction) {
-        let next = tile + directions[direction];
+    live() {
+        const newTiles = this.tiles.map((value, index) => this.nextGeneration(index));
+        const isUnchanged = JSON.stringify(newTiles) === JSON.stringify(this.tiles);
+        this.tiles = newTiles;
 
-        return this.isAdjacent(tile, next) ? next : null;
+        this.drawGeneration();
+
+        if (this._stopped) {
+            console.log('Game stopped by user');
+        } else if (isUnchanged) {
+            console.log('Equilibrium reached, aborting');
+            this._onStopped();
+        } else {
+            setTimeout(this.live.bind(this), 250);
+        }
+    }
+
+    nextGeneration(index) {
+        const isAlive = (i) => !!this.tiles[i];
+        const aliveNeighbours = this.getNeighbours(index).filter(isAlive).length;
+        const survive = aliveNeighbours === 2 && isAlive(index);
+        const reproduce = aliveNeighbours === 3;
+
+        // Cast to int
+        return +(survive || reproduce);
+    }
+
+    stop() {
+        this._stopped = true;
+    }
+
+    onStopped(fn) {
+        this._onStopped = fn;
+    }
+
+    getNeighbours(from) {
+        const isInGrid = (index) => index > -1 && index < this.tiles.length;
+        const takeStep = (step) => step + from;
+        const notPastEdge = (index) => {
+            return Math.abs(this.getRow(index) - this.getRow(from)) < 2 &&
+                    Math.abs(this.getColumn(index) - this.getColumn(from)) < 2;
+        };
+
+        let directions = [
+
+            -(this.width + 1),
+            -this.width,
+            -(this.width - 1),
+            -1,
+            1,
+            this.width - 1,
+            this.width,
+            this.width + 1
+        ];
+
+
+        return directions
+                .map(takeStep)
+                .filter(isInGrid)
+                .filter(notPastEdge);
     }
 
     /*** Render game ***/
@@ -70,18 +99,18 @@ module.exports = class {
 
         this.renderGrid();
 
-        this.tiles.forEach((tile) => tile.draw());
+        //this.tiles.forEach((tile) => tile.draw());
     }
 
     renderGrid() {
         this.canvas.lineWidth = '1';
         this.canvas.strokeStyle = 'black';
 
-        const maxWidth = this.width * this.tileSize + this.width;
-        const maxHeight = this.width * this.tileSize + this.width;
+        const maxWidth = this.width * this.tileSize + 2;
+        const maxHeight = this.width * this.tileSize + 2;
 
-        for(let i = 1; i < this.width; i++) {
-            const offset = i * this.tileSize + i;
+        for(let i = 0; i < this.width + 1; i++) {
+            const offset = i * this.tileSize + 1;
 
             this.canvas.beginPath();
             this.canvas.moveTo(offset, 0);
@@ -89,8 +118,8 @@ module.exports = class {
             this.canvas.stroke();
         }
 
-        for(let i = 1; i < this.height; i++) {
-            const offset = i * this.tileSize + i;
+        for(let i = 0; i < this.height + 1; i++) {
+            const offset = i * this.tileSize + 1;
 
             this.canvas.beginPath();
             this.canvas.moveTo(0, offset);
@@ -99,8 +128,21 @@ module.exports = class {
         }
     }
 
-    stop() {
-        this._stopped = true;
+    drawTile(index) {
+        let color = ['white', 'black'][this.tiles[index]],
+            x = this.getColumn(index) * this.tileSize,
+            y = this.getRow(index) * this.tileSize;
+
+        this.canvas.fillStyle = color;
+        this.canvas.fillRect(x, y, this.tileSize, this.tileSize);
+    }
+
+    drawGeneration() {
+        // Calculate new generation
+
+        this.tiles.forEach((tile, i) => this.drawTile(i));
+
+        this.renderGrid();
     }
 
     /*** Helpers ***/
@@ -111,51 +153,8 @@ module.exports = class {
     getRow(tile) {
         return Math.floor(tile / this.width);
     }
-
-    isAdjacent(tile, next) {
-        return this.getRow(tile) === this.getRow(next) || this.getColumn(tile) === this.getColumn(next);
-    }
 };
-},{"./Tile.js":2}],2:[function(require,module,exports){
-const colors = ['white', 'black'];
-
-module.exports = class {
-
-    constructor(canvas, alive, x, y, width, height) {
-        this.canvas = canvas;
-
-        this.alive = alive;
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-
-        this._highlighted = false;
-    }
-
-    draw(color) {
-        color = color || colors[+this.alive]; // Cast alive to an int
-
-        this.canvas.fillStyle = color;
-        this.canvas.fillRect(this.x, this.y, this.width, this.height);
-    }
-
-    highlight() {
-        this._highlighted = true;
-        this.draw('hotpink');
-    }
-
-    reset() {
-        this._highlighted = false;
-        this.draw();
-    }
-
-    setAlive(alive) {
-        this.alive = alive;
-        this.draw();
-    }
-};
-},{}],3:[function(require,module,exports){
+},{}],2:[function(require,module,exports){
 (function () {
 
     const Game = require('./Game.js');
@@ -189,7 +188,9 @@ module.exports = class {
     function create() {
         stop();
 
-        game = new Game(elements.game, 50, 50);
+        game = new Game(elements.game, 40, 40);
+
+        game.onStopped(stop);
 
         enable(elements.startButton);
     }
@@ -225,4 +226,4 @@ module.exports = class {
 
     init();
 }());
-},{"./Game.js":1}]},{},[3]);
+},{"./Game.js":1}]},{},[2]);

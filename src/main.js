@@ -31,7 +31,9 @@
     function create() {
         stop();
 
-        game = new Game(elements.game, 50, 50);
+        game = new Game(elements.game, 40, 40);
+
+        game.onStopped(stop);
 
         enable(elements.startButton);
     }
