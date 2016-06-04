@@ -10,6 +10,7 @@ module.exports = class {
         this.width = width;
         this.height = height;
 
+        // TODO: keep list of alive tiles instead?
         this.tiles = new Array(width * height).fill(0);
         this.tileSize = (this.element.width - maxDimension) / maxDimension;
 
