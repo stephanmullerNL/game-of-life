@@ -34,8 +34,8 @@ module.exports = class {
     live() {
         const newTiles = this.tiles.map((value, index) => this.nextGeneration(index));
         const isUnchanged = JSON.stringify(newTiles) === JSON.stringify(this.tiles);
-        this.tiles = newTiles;
 
+        this.tiles = newTiles;
         this.drawGeneration();
 
         if (this._stopped) {
@@ -48,6 +48,15 @@ module.exports = class {
         }
     }
 
+    stop() {
+        this._stopped = true;
+    }
+
+    onStopped(fn) {
+        this._onStopped = fn;
+    }
+
+    /*** Tiles ***/
     nextGeneration(index) {
         const isAlive = (i) => !!this.tiles[i];
         const aliveNeighbours = this.getNeighbours(index).filter(isAlive).length;
@@ -56,14 +65,6 @@ module.exports = class {
 
         // Cast to int
         return +(survive || reproduce);
-    }
-
-    stop() {
-        this._stopped = true;
-    }
-
-    onStopped(fn) {
-        this._onStopped = fn;
     }
 
     getNeighbours(from) {
@@ -91,6 +92,14 @@ module.exports = class {
                 .map(takeStep)
                 .filter(isInGrid)
                 .filter(notPastEdge);
+    }
+
+    getColumn(tile) {
+        return Math.floor(tile % this.width);
+    }
+
+    getRow(tile) {
+        return Math.floor(tile / this.width);
     }
 
     /*** Render game ***/
@@ -138,19 +147,8 @@ module.exports = class {
     }
 
     drawGeneration() {
-        // Calculate new generation
-
         this.tiles.forEach((tile, i) => this.drawTile(i));
 
         this.renderGrid();
-    }
-
-    /*** Helpers ***/
-    getColumn(tile) {
-        return Math.floor(tile % this.width);
-    }
-
-    getRow(tile) {
-        return Math.floor(tile / this.width);
     }
 };
