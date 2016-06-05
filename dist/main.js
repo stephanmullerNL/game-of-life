@@ -10,22 +10,28 @@ module.exports = class {
         this.width = width;
         this.height = height;
 
-        // TODO: keep list of alive tiles instead?
-        this.tiles = new Array(width * height).fill(0);
+        this.tiles = [];
+        this._previousGeneration = [];
+
         this.tileSize = (this.element.width - maxDimension) / maxDimension;
 
         this.renderCanvas();
     }
-
 
     /*** Play ***/
     start() {
         this._stopped = false;
 
         // TODO: draw starting tiles
-        //const pattern = [121, 122, 123, 83, 42];
-        const pattern = [256, 257, 258, 259, 260, 261, 262, 263, 264, 265];
-        pattern.map((i) => this.tiles[i] = 1);
+        let pattern = [1351, 1352, 1353, 1313, 1272];
+        pattern = pattern.concat([256, 257, 258, 259, 260, 261, 262, 263, 264, 265]);
+
+        pattern.forEach((index) => {
+            this.tiles.push({
+                x: Math.floor(index % this.width),
+                y: Math.floor(index / this.width)
+            });
+        });
 
         this.drawGeneration();
 
@@ -33,11 +39,25 @@ module.exports = class {
     }
 
     live() {
-        const newTiles = this.tiles.map((value, index) => this.nextGeneration(index));
-        const isUnchanged = JSON.stringify(newTiles) === JSON.stringify(this.tiles);
+        const noDuplicates = (tile, index, all) => index === this.getIndex(tile, all);
+        const allNeighbours = (all, tile) => {
+            all = all.concat(this.getNeighbours(tile));
+            return all;
+        };
 
-        this.tiles = newTiles;
+        let isUnchanged;
+
+        // TODO: keep list of past generation hashes to check stabilization
+        this._previousGeneration = [].concat(this.tiles);
+
+        this.tiles = this.tiles
+            .reduce(allNeighbours, [])
+            .filter(noDuplicates)
+            .filter(this.nextGeneration.bind(this));
+
         this.drawGeneration();
+
+        isUnchanged = JSON.stringify(this._previousGeneration) === JSON.stringify(this.tiles);
 
         if (this._stopped) {
             console.log('Game stopped by user');
@@ -58,49 +78,39 @@ module.exports = class {
     }
 
     /*** Tiles ***/
-    nextGeneration(index) {
-        const isAlive = (i) => !!this.tiles[i];
-        const aliveNeighbours = this.getNeighbours(index).filter(isAlive).length;
-        const survive = aliveNeighbours === 2 && isAlive(index);
-        const reproduce = aliveNeighbours === 3;
+    nextGeneration(tile) {
+        const isAlive = (tile) => this.getIndex(tile) > -1;
+        const aliveNeighbours = this.getNeighbours(tile).filter(isAlive);
+
+        const survive = aliveNeighbours.length === 2 && isAlive(tile);
+        const reproduce = aliveNeighbours.length === 3;
 
         // Cast to int
-        return +(survive || reproduce);
+        return (survive || reproduce);
     }
 
     getNeighbours(from) {
-        const isInGrid = (index) => index > -1 && index < this.tiles.length;
-        const takeStep = (step) => step + from;
-        const notPastEdge = (index) => {
-            return Math.abs(this.getRow(index) - this.getRow(from)) < 2 &&
-                    Math.abs(this.getColumn(index) - this.getColumn(from)) < 2;
-        };
-
-        let directions = [
-
-            -(this.width + 1),
-            -this.width,
-            -(this.width - 1),
-            -1,
-            1,
-            this.width - 1,
-            this.width,
-            this.width + 1
+        const steps = [
+            { x: -1, y: -1},
+            { x: -1, y: 0 },
+            { x: -1, y: 1},
+            { x: 0, y: -1 },
+            { x: 0, y: 1 },
+            { x: 1, y: -1 },
+            { x: 1, y: 0 },
+            { x: 1, y: 1 }
         ];
 
-
-        return directions
-                .map(takeStep)
-                .filter(isInGrid)
-                .filter(notPastEdge);
+        return steps.map(step => ({
+            x: from.x + step.x,
+            y: from.y + step.y
+        }));
     }
 
-    getColumn(tile) {
-        return Math.floor(tile % this.width);
-    }
+    getIndex(tile, list = this.tiles) {
+        const sameTile = (currentTile) => currentTile.x === tile.x && currentTile.y === tile.y;
 
-    getRow(tile) {
-        return Math.floor(tile / this.width);
+        return list.findIndex(sameTile);
     }
 
     /*** Render game ***/
@@ -138,17 +148,14 @@ module.exports = class {
         }
     }
 
-    drawTile(index) {
-        let color = ['white', 'black'][this.tiles[index]],
-            x = this.getColumn(index) * this.tileSize,
-            y = this.getRow(index) * this.tileSize;
-
+    drawTile(tile, color) {
         this.canvas.fillStyle = color;
-        this.canvas.fillRect(x, y, this.tileSize, this.tileSize);
+        this.canvas.fillRect(tile.x * this.tileSize, tile.y * this.tileSize, this.tileSize, this.tileSize);
     }
 
     drawGeneration() {
-        this.tiles.forEach((tile, i) => this.drawTile(i));
+        this._previousGeneration.forEach((tile) => this.drawTile(tile, 'silver'));
+        this.tiles.forEach((tile) => this.drawTile(tile, 'black'));
 
         this.renderGrid();
     }
