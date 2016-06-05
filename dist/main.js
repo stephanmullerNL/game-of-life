@@ -22,7 +22,7 @@ module.exports = class {
     start() {
         this._stopped = false;
 
-        // TODO: draw starting tiles
+        // TODO: implement drawing of starting tiles
         let pattern = [1351, 1352, 1353, 1313, 1272];
         pattern = pattern.concat([256, 257, 258, 259, 260, 261, 262, 263, 264, 265]);
 
@@ -47,7 +47,7 @@ module.exports = class {
 
         let isUnchanged;
 
-        // TODO: keep list of past generation hashes to check stabilization
+        // TODO: keep list of past generation hashes to check stabilization over multiple generations
         this._previousGeneration = [].concat(this.tiles);
 
         this.tiles = this.tiles
@@ -116,10 +116,7 @@ module.exports = class {
     /*** Render game ***/
     renderCanvas() {
         this.canvas.clearRect(0, 0, this.element.width, this.element.height);
-
         this.renderGrid();
-
-        //this.tiles.forEach((tile) => tile.draw());
     }
 
     renderGrid() {
