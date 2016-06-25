@@ -125,10 +125,13 @@ module.exports = class {
 
     /*** Render game ***/
     createGame() {
+        this.element.innerHTML = '';
+
         for(let i = 0; i < this.width * this.height; i++) {
             let checkbox = document.createElement('input');
             let label = document.createElement('label');
 
+            // TODO: Add event to update state by clicking during gameplay ?
             checkbox.type = 'checkbox';
             checkbox.id = i;
 
@@ -141,6 +144,7 @@ module.exports = class {
         }
     }
 
+    // TODO: Move drawing to separate class
     drawGeneration() {
         this._previousGeneration.forEach((tile) => this.setState(tile, 'visited'));
         this.generation.forEach((tile) => this.setState(tile, 'alive'));
