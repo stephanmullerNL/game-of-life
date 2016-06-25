@@ -1,5 +1,6 @@
 module.exports = class {
 
+    // TODO: Make entirely functional, move all DOM logic somewhere else
     constructor(element, width, height) {
         this.element = element;
 
@@ -9,6 +10,7 @@ module.exports = class {
         this.tiles = [];
         this.generation = [];
         this._previousGeneration = [];
+        this._neighboursCache = {};
 
         // temp
         let pattern = [1, 42, 80, 81, 82];
@@ -16,63 +18,17 @@ module.exports = class {
         this.createGame(pattern);
     }
 
-    /*** Play ***/
+    /*** Controls ***/
     start() {
         this._stopped = false;
 
+        // TODO: Work with checkpoints
         this.firstGeneration = this.getFirstGeneration();
         this.generation = this.firstGeneration;
 
         this.drawGeneration();
 
         this._timeout = setTimeout(this.live.bind(this), 1000);
-    }
-
-    live() {
-        const noDuplicates = (tile, index, all) => {
-            return all.indexOf(tile) === index;
-        };
-        const addAllNeighbours = (all, tile) => {
-            all = all.concat(this.getNeighbours(tile));
-            return all;
-        };
-
-        let isUnchanged;
-
-        // TODO: keep list of past generation hashes to check stabilization over multiple generations
-        this._previousGeneration = [].concat(this.generation);
-
-        this.generation = this.generation
-            .reduce(addAllNeighbours, [])
-            .filter(noDuplicates)
-            .filter(this.nextGeneration.bind(this));
-
-        this.drawGeneration();
-
-        // TODO: only track visible part of the generation
-        isUnchanged = JSON.stringify(this._previousGeneration) === JSON.stringify(this.generation);
-
-        if (this._stopped) {
-            console.log('Game stopped by user');
-        } else if (isUnchanged) {
-            console.log('Equilibrium reached, aborting');
-            this._onStopped();
-        } else {
-            this._timeout = setTimeout(this.live.bind(this), 250);
-        }
-    }
-
-    getFirstGeneration() {
-        const alreadyChecked = (element) => {
-            return element.checked;
-        };
-        const getIndex = (element) => {
-            return Number(element.id);
-        };
-
-        return this.tiles
-                .filter(alreadyChecked)
-                .map(getIndex);
     }
 
     reset() {
@@ -91,59 +47,92 @@ module.exports = class {
         this._onStopped = fn;
     }
 
-    /*** Tiles ***/
-    nextGeneration(tile) {
-        const isAlive = (tile) =>  {
-            return this.generation.indexOf(tile) > -1;
+    /*** Game ***/
+    live() {
+        const noDuplicates = (tile, index, all) => {
+            return all.indexOf(tile) === index;
         };
-        const aliveNeighbours = this.getNeighbours(tile).filter(isAlive);
+        const addAllNeighbours = (all, tile) => {
+            all = all.concat(this.getNeighbours(tile));
+            return all;
+        };
 
-        const survive = aliveNeighbours.length === 2 && isAlive(tile);
+        let isUnchanged;
+
+        // TODO: keep list of past generation hashes to check stabilization over multiple generations
+        this._previousGeneration = [].concat(this.generation);
+
+        this.generation = this.generation
+            .reduce(addAllNeighbours, [])
+            .filter(noDuplicates)
+            .filter(this.getNextGeneration.bind(this));
+
+        this.drawGeneration();
+
+        // TODO: only track visible part of the generation
+        isUnchanged = JSON.stringify(this._previousGeneration) === JSON.stringify(this.generation);
+
+        if (this._stopped) {
+            console.log('Game stopped by user');
+        } else if (isUnchanged) {
+            console.log('Equilibrium reached, aborting');
+            this._onStopped();
+        } else {
+            this._timeout = setTimeout(this.live.bind(this), 250);
+        }
+    }
+
+    /*** Tiles ***/
+    getNextGeneration(currentTile) {
+        const isAlive = (tile) =>  {
+            return this.generation.findIndex((genTile) => {
+                    return genTile.i === tile.i;
+                }) > -1;
+        };
+        let aliveNeighbours = this.getNeighbours(currentTile).filter(isAlive);
+
+        const survive = aliveNeighbours.length === 2 && isAlive(currentTile);
         const reproduce = aliveNeighbours.length === 3;
 
-        // Cast to int
         return (survive || reproduce);
     }
 
-    // TODO: Cacche neighbours?
     getNeighbours(from) {
+        const createNeighbour = (step) => {
+            return {
+                i: from.i + (step.x + step.y * this.width),
+                x: from.x + step.x,
+                y: from.y + step.y
+            };
+        };
         const steps = [
-            -this.width - 1,
-            -this.width,
-            -this.width + 1,
-            -1,
-            1,
-            this.width - 1,
-            this.width,
-            this.width + 1
+            { x: -1, y: -1 },
+            { x: -1, y:  0 },
+            { x: -1, y:  1 },
+            { x:  0, y: -1 },
+            { x:  0, y:  1 },
+            { x:  1, y: -1 },
+            { x:  1, y:  0 },
+            { x:  1, y:  1 }
         ];
+        const index = from.i;
 
-        return steps.map(step => {
-            return step + from;
-        });
-    }
-
-    setState(tile, state) {
-        let element = this.tiles[tile];
-
-        if (!element) {
-            return;
+        if (!this._neighboursCache[index]) {
+            this._neighboursCache[index] = steps.map(createNeighbour);
         }
 
-        switch(state) {
-            case 'alive':
-                element.checked = true;
-                element.indeterminate = false;
-                break;
-            case 'visited':
-                element.indeterminate = true;
-                // no break
-            case 'dead':
-            default:
-                element.checked = false;
+        return this._neighboursCache[index];
+    }
+
+    toCoordinates(index) {
+        return {
+            i: index,
+            x: Math.floor(index % this.width),
+            y: Math.floor(index / this.width)
         }
     }
 
+    // TODO: Move to separate class
     /*** Render game ***/
     createGame(pattern = []) {
         this.element.innerHTML = '';
@@ -167,9 +156,43 @@ module.exports = class {
         }
     }
 
-    // TODO: Move drawing to separate class
     drawGeneration() {
         this._previousGeneration.forEach((tile) => this.setState(tile, 'visited'));
         this.generation.forEach((tile) => this.setState(tile, 'alive'));
+    }
+
+    getFirstGeneration() {
+        const alreadyChecked = (element) => {
+            return element.checked;
+        };
+        const getIndex = (element) => {
+            return Number(element.id);
+        };
+
+        return this.tiles
+            .filter(alreadyChecked)
+            .map(getIndex)
+            .map(this.toCoordinates.bind(this));
+    }
+
+    setState(tile, state) {
+        const element = this.tiles[tile.i];
+
+        if (!element) {
+            return;
+        }
+
+        switch(state) {
+            case 'alive':
+                element.checked = true;
+                element.indeterminate = false;
+                break;
+            case 'visited':
+                element.indeterminate = true;
+            // no break
+            case 'dead':
+            default:
+                element.checked = false;
+        }
     }
 };
