@@ -29,8 +29,10 @@ module.exports = class {
     }
 
     live() {
-        const noDuplicates = (tile, index, all) => index === this.getIndex(tile, all);
-        const allNeighbours = (all, tile) => {
+        const noDuplicates = (tile, index, all) => {
+            return all.indexOf(tile) === index;
+        };
+        const addAllNeighbours = (all, tile) => {
             all = all.concat(this.getNeighbours(tile));
             return all;
         };
@@ -41,12 +43,13 @@ module.exports = class {
         this._previousGeneration = [].concat(this.generation);
 
         this.generation = this.generation
-            .reduce(allNeighbours, [])
+            .reduce(addAllNeighbours, [])
             .filter(noDuplicates)
             .filter(this.nextGeneration.bind(this));
 
         this.drawGeneration();
 
+        // TODO: only track visible part of the generation
         isUnchanged = JSON.stringify(this._previousGeneration) === JSON.stringify(this.generation);
 
         if (this._stopped) {
@@ -69,7 +72,9 @@ module.exports = class {
 
     /*** Tiles ***/
     nextGeneration(tile) {
-        const isAlive = (tile) => this.getIndex(tile) > -1;
+        const isAlive = (tile) =>  {
+            return this.generation.indexOf(tile) > -1;
+        };
         const aliveNeighbours = this.getNeighbours(tile).filter(isAlive);
 
         const survive = aliveNeighbours.length === 2 && isAlive(tile);
@@ -81,31 +86,28 @@ module.exports = class {
 
     getNeighbours(from) {
         const steps = [
-            { x: -1, y: -1},
-            { x: -1, y: 0 },
-            { x: -1, y: 1},
-            { x: 0, y: -1 },
-            { x: 0, y: 1 },
-            { x: 1, y: -1 },
-            { x: 1, y: 0 },
-            { x: 1, y: 1 }
+            -this.width - 1,
+            -this.width,
+            -this.width + 1,
+            -1,
+            1,
+            this.width - 1,
+            this.width,
+            this.width + 1
         ];
 
-        return steps.map(step => ({
-            x: from.x + step.x,
-            y: from.y + step.y
-        }));
-    }
-
-    getIndex(tile, list = this.tiles) {
-        const sameTile = (currentTile) => currentTile.x === tile.x && currentTile.y === tile.y;
-
-        return list.findIndex(sameTile);
+        return steps.map(step => {
+            return step + from;
+        });
     }
 
     setState(tile, state) {
         let element = this.tiles[tile];
-console.log(tile, state, element);
+
+        if (!element) {
+            return;
+        }
+
         switch(state) {
             case 'alive':
                 element.checked = true;
@@ -139,7 +141,6 @@ console.log(tile, state, element);
     }
 
     drawGeneration() {
-        console.log('draw generation', this._previousGeneration, this.generation);
         this._previousGeneration.forEach((tile) => this.setState(tile, 'visited'));
         this.generation.forEach((tile) => this.setState(tile, 'alive'));
     }
