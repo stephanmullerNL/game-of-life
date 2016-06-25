@@ -54,10 +54,13 @@
         disable(elements.stopButton);
         enable(elements.createButton);
         enable(elements.startButton);
+        enable(elements.resetButton);
     }
 
     function reset() {
-        // TODO
+        disable(elements.resetButton);
+
+        game && game.reset();
     }
 
     function disable(element) {

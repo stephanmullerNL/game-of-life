@@ -10,22 +10,22 @@ module.exports = class {
         this.generation = [];
         this._previousGeneration = [];
 
-        this.createGame();
+        // temp
+        let pattern = [1, 42, 80, 81, 82];
+
+        this.createGame(pattern);
     }
 
     /*** Play ***/
     start() {
         this._stopped = false;
 
-        // TODO: implement drawing of starting tiles
-        let pattern = [1351, 1352, 1353, 1313, 1272];
-        pattern = pattern.concat([256, 257, 258, 259, 260, 261, 262, 263, 264, 265]);
-
-        this.generation = pattern;
+        this.firstGeneration = this.getFirstGeneration();
+        this.generation = this.firstGeneration;
 
         this.drawGeneration();
 
-        setTimeout(this.live.bind(this), 1000);
+        this._timeout = setTimeout(this.live.bind(this), 1000);
     }
 
     live() {
@@ -58,11 +58,32 @@ module.exports = class {
             console.log('Equilibrium reached, aborting');
             this._onStopped();
         } else {
-            setTimeout(this.live.bind(this), 250);
+            this._timeout = setTimeout(this.live.bind(this), 250);
         }
     }
 
+    getFirstGeneration() {
+        const alreadyChecked = (element) => {
+            return element.checked;
+        };
+        const getIndex = (element) => {
+            return Number(element.id);
+        };
+
+        return this.tiles
+                .filter(alreadyChecked)
+                .map(getIndex);
+    }
+
+    reset() {
+        this._previousGeneration = [];
+        this.generation = this.firstGeneration;
+
+        this.createGame(this.generation);
+    }
+
     stop() {
+        clearTimeout(this._timeout);
         this._stopped = true;
     }
 
@@ -84,6 +105,7 @@ module.exports = class {
         return (survive || reproduce);
     }
 
+    // TODO: Cacche neighbours?
     getNeighbours(from) {
         const steps = [
             -this.width - 1,
@@ -123,8 +145,9 @@ module.exports = class {
     }
 
     /*** Render game ***/
-    createGame() {
+    createGame(pattern = []) {
         this.element.innerHTML = '';
+        this.tiles = [];
 
         for(let i = 0; i < this.width * this.height; i++) {
             let checkbox = document.createElement('input');
@@ -133,6 +156,7 @@ module.exports = class {
             // TODO: Add event to update state by clicking during gameplay ?
             checkbox.type = 'checkbox';
             checkbox.id = i;
+            checkbox.checked = pattern.indexOf(i) > -1;
 
             label.setAttribute('for', i);
 
