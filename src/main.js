@@ -31,6 +31,7 @@
     function create() {
         stop();
 
+        // todo: customize dimensions
         game = new Game(elements.game, 40, 40);
 
         game.onStopped(stop);

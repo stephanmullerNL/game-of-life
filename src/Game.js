@@ -1,20 +1,16 @@
 module.exports = class {
 
     constructor(element, width, height) {
-        const maxDimension = Math.max(width, height);
-
         this.element = element;
-        this.canvas = element.getContext('2d');
 
         this.width = width;
         this.height = height;
 
         this.tiles = [];
+        this.generation = [];
         this._previousGeneration = [];
 
-        this.tileSize = (this.element.width - maxDimension) / maxDimension;
-
-        this.renderCanvas();
+        this.createGame();
     }
 
     /*** Play ***/
@@ -25,12 +21,7 @@ module.exports = class {
         let pattern = [1351, 1352, 1353, 1313, 1272];
         pattern = pattern.concat([256, 257, 258, 259, 260, 261, 262, 263, 264, 265]);
 
-        pattern.forEach((index) => {
-            this.tiles.push({
-                x: Math.floor(index % this.width),
-                y: Math.floor(index / this.width)
-            });
-        });
+        this.generation = pattern;
 
         this.drawGeneration();
 
@@ -47,16 +38,16 @@ module.exports = class {
         let isUnchanged;
 
         // TODO: keep list of past generation hashes to check stabilization over multiple generations
-        this._previousGeneration = [].concat(this.tiles);
+        this._previousGeneration = [].concat(this.generation);
 
-        this.tiles = this.tiles
+        this.generation = this.generation
             .reduce(allNeighbours, [])
             .filter(noDuplicates)
             .filter(this.nextGeneration.bind(this));
 
         this.drawGeneration();
 
-        isUnchanged = JSON.stringify(this._previousGeneration) === JSON.stringify(this.tiles);
+        isUnchanged = JSON.stringify(this._previousGeneration) === JSON.stringify(this.generation);
 
         if (this._stopped) {
             console.log('Game stopped by user');
@@ -112,47 +103,44 @@ module.exports = class {
         return list.findIndex(sameTile);
     }
 
+    setState(tile, state) {
+        let element = this.tiles[tile];
+console.log(tile, state, element);
+        switch(state) {
+            case 'alive':
+                element.checked = true;
+                element.indeterminate = false;
+                break;
+            case 'visited':
+                element.indeterminate = true;
+                // no break
+            case 'dead':
+            default:
+                element.checked = false;
+        }
+    }
+
     /*** Render game ***/
-    renderCanvas() {
-        this.canvas.clearRect(0, 0, this.element.width, this.element.height);
-        this.renderGrid();
-    }
+    createGame() {
+        for(let i = 0; i < this.width * this.height; i++) {
+            let checkbox = document.createElement('input');
+            let label = document.createElement('label');
 
-    renderGrid() {
-        this.canvas.lineWidth = '1';
-        this.canvas.strokeStyle = 'black';
+            checkbox.type = 'checkbox';
+            checkbox.id = i;
 
-        const maxWidth = this.width * this.tileSize + 2;
-        const maxHeight = this.width * this.tileSize + 2;
+            label.setAttribute('for', i);
 
-        for(let i = 0; i < this.width + 1; i++) {
-            const offset = i * this.tileSize + 1;
+            this.element.appendChild(checkbox);
+            this.element.appendChild(label);
 
-            this.canvas.beginPath();
-            this.canvas.moveTo(offset, 0);
-            this.canvas.lineTo(offset, maxHeight);
-            this.canvas.stroke();
+            this.tiles.push(checkbox);
         }
-
-        for(let i = 0; i < this.height + 1; i++) {
-            const offset = i * this.tileSize + 1;
-
-            this.canvas.beginPath();
-            this.canvas.moveTo(0, offset);
-            this.canvas.lineTo(maxWidth, offset);
-            this.canvas.stroke();
-        }
-    }
-
-    drawTile(tile, color) {
-        this.canvas.fillStyle = color;
-        this.canvas.fillRect(tile.x * this.tileSize, tile.y * this.tileSize, this.tileSize, this.tileSize);
     }
 
     drawGeneration() {
-        this._previousGeneration.forEach((tile) => this.drawTile(tile, 'silver'));
-        this.tiles.forEach((tile) => this.drawTile(tile, 'black'));
-
-        this.renderGrid();
+        console.log('draw generation', this._previousGeneration, this.generation);
+        this._previousGeneration.forEach((tile) => this.setState(tile, 'visited'));
+        this.generation.forEach((tile) => this.setState(tile, 'alive'));
     }
 };

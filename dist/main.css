@@ -5,9 +5,12 @@ body {
 }
 
 #game {
+    border: solid black;
+    border-width: 0 1px 1px 0;
     display: block;
     margin: 0 auto;
     overflow: auto;
+    width: 44em;
 }
 
 section {
@@ -18,9 +21,25 @@ section {
     margin: 1em;
 }
 
-canvas {
-    cursor: crosshair;
-    /*border: 1px solid black;*/
+input[type=checkbox] {
+    position: absolute;
+    opacity: 0;
+}
+
+label {
+    border: solid black;
+    border-width: 1px 0 0 1px;
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+}
+
+input:indeterminate + label {
+    background: #ccc;
+}
+
+input:checked + label {
+    background: black;
 }
 
 footer {
