@@ -38,8 +38,7 @@ module.exports = class {
 
         // TODO: Work with checkpoints
         this.generation = this.firstGeneration = this.getFirstGeneration();
-
-        console.log('first', this.generation);
+        this.generation.forEach((tile) => tile.alive = true);
 
         this.drawGeneration();
 
@@ -50,17 +49,15 @@ module.exports = class {
         let pattern;
 
         this._previousGeneration = [];
-        this.generation = this.firstGeneration;
 
-        pattern = this.generation
-                    .map((tile) => tile.coordinates)
-                    .map(this.toIndex.bind(this));
+        pattern = this.firstGeneration.map(this.toIndex.bind(this));
 
         this.createGame(pattern);
     }
 
     stop() {
         clearTimeout(timeout);
+
         stopped = true;
         this.element.classList.remove('active');
     }
@@ -73,6 +70,9 @@ module.exports = class {
     live() {
         this._previousGeneration = this.generation;
         this.generation = this.nextGeneration();
+
+        this._previousGeneration.forEach((tile) => tile.alive = false);
+        this.generation.forEach((tile) => tile.alive = true);
 
         this.drawGeneration();
 
@@ -89,20 +89,11 @@ module.exports = class {
     }
 
     nextGeneration() {
-        const getAllNeighbours = (all, tile) => {
-            this.getNeighbours(tile).forEach((neighbour) => {
-                all.add(neighbour);
-            });
-            return all;
-        };
-        const uniqueNeighbours = this.generation.reduce(getAllNeighbours, new Set());
+        const uniqueNeighbours = this.generation.reduce(this.getAllNeighbours.bind(this), new Set());
 
         let filtered = [...uniqueNeighbours]
             .filter(this.getNextGeneration.bind(this));
         console.log('next generation', filtered);
-
-        this._previousGeneration.forEach((tile) => tile.alive = false);
-        filtered.forEach((tile) => tile.alive = true);
 
         return filtered;
     }
@@ -118,11 +109,12 @@ module.exports = class {
     }
 
     /*** Tiles ***/
-    createTile(x, y, alive = false) {
-        let index = `${x},${y}`;
+    createTile(x, y) {
+        let index = String([x, y]);
 
         let tile = {
-            alive: alive,
+            id: index,
+            alive: false,
             coordinates: [x, y],
             neighbours: [],
             visible: x > -1 && x < this.width && y > -1 && y < this.height
@@ -134,7 +126,7 @@ module.exports = class {
     }
 
     getTile(x, y) {
-        return tiles.get(`${x},${y}`);
+        return tiles.get( String([x,y]) );
     }
 
     getNextGeneration(currentTile) {
@@ -145,6 +137,15 @@ module.exports = class {
 
         return (survive || reproduce);
     }
+
+    getAllNeighbours(all, tile) {
+        this.getNeighbours(tile).forEach((neighbour) => {
+            all.add(neighbour);
+        });
+
+        return all;
+    };
+
 
     getNeighbours(from) {
         let [fromX, fromY] = from.coordinates;
@@ -219,7 +220,7 @@ module.exports = class {
             return element.checked;
         };
         const createTile = (coordinates) => {
-            return this.createTile(...coordinates, true);
+            return tiles.get(String(coordinates)) || this.createTile(...coordinates);
         };
         const getCoordinates = (element) => {
             let id = Number(element.id);
@@ -252,6 +253,11 @@ module.exports = class {
             default:
                 element.checked = false;
         }
+    }
+
+    // debug
+    getAll() {
+        return tiles;
     }
 };
 },{}],2:[function(require,module,exports){
