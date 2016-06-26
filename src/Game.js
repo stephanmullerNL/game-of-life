@@ -45,12 +45,13 @@ module.exports = class {
     }
 
     reset() {
-        let pattern;
+        let pattern = this.firstGeneration.map(this.toIndex.bind(this));;
+
+        tiles.forEach((tile) => {
+            tile.alive = false;
+        });
 
         this._previousGeneration = [];
-
-        pattern = this.firstGeneration.map(this.toIndex.bind(this));
-
         this.createGame(pattern);
     }
 
@@ -90,11 +91,7 @@ module.exports = class {
     nextGeneration() {
         const uniqueNeighbours = this.generation.reduce(this.getAllNeighbours.bind(this), new Set());
 
-        let filtered = [...uniqueNeighbours]
-            .filter(this.getNextGeneration.bind(this));
-        console.log('next generation', filtered);
-
-        return filtered;
+        return [...uniqueNeighbours].filter(this.getNextGeneration.bind(this));
     }
 
     isUnchanged() {
@@ -112,7 +109,6 @@ module.exports = class {
         let index = String([x, y]);
 
         let tile = {
-            id: index,
             alive: false,
             coordinates: [x, y],
             neighbours: [],
@@ -134,7 +130,7 @@ module.exports = class {
         const survive = aliveNeighbours.length === 2 && this.isAlive(currentTile);
         const reproduce = aliveNeighbours.length === 3;
 
-        return (survive || reproduce);
+        return survive || reproduce;
     }
 
     getAllNeighbours(all, tile) {
@@ -254,8 +250,4 @@ module.exports = class {
         }
     }
 
-    // debug
-    getAll() {
-        return tiles;
-    }
 };
