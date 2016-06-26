@@ -35,10 +35,15 @@ module.exports = class {
     }
 
     reset() {
+        let pattern;
+
         this._previousGeneration = [];
         this.generation = this.firstGeneration;
 
-        this.createGame(this.generation);
+        pattern = this.generation
+                    .map(this.toIndex.bind(this));
+
+        this.createGame(pattern);
     }
 
     stop() {
@@ -152,6 +157,7 @@ module.exports = class {
     createGame(pattern = []) {
         this.element.innerHTML = '';
         this.tiles = [];
+        console.log('create', pattern);
 
         for(let i = 0; i < this.width * this.height; i++) {
             let checkbox = document.createElement('input');
