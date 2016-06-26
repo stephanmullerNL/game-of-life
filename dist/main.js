@@ -61,8 +61,7 @@ module.exports = class {
 
         let isUnchanged;
 
-        // TODO: keep list of past generation hashes to check stabilization over multiple generations
-        this._previousGeneration = this.generation.slice(0);
+        this._previousGeneration = this.generation;
 
         this.generation = this.generation
             .reduce(addAllNeighbours, [])
@@ -71,7 +70,6 @@ module.exports = class {
 
         this.drawGeneration();
 
-        // TODO: only track visible part of the generation
         isUnchanged = this.isUnchanged();
 
         if (this._stopped) {
