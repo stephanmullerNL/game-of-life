@@ -57,22 +57,10 @@ module.exports = class {
 
     /*** Game ***/
     live() {
-        const noDuplicates = (tile, index, all) => {
-            return all.indexOf(tile) === index;
-        };
-        const addAllNeighbours = (all, tile) => {
-            all = all.concat(this.getNeighbours(tile));
-            return all;
-        };
-
         let isUnchanged;
 
         this._previousGeneration = this.generation;
-
-        this.generation = this.generation
-            .reduce(addAllNeighbours, [])
-            .filter(noDuplicates)
-            .filter(this.getNextGeneration.bind(this));
+        this.generation = this.nextGeneration();
 
         this.drawGeneration();
 
@@ -86,6 +74,18 @@ module.exports = class {
         } else {
             this._timeout = setTimeout(this.live.bind(this), 250);
         }
+    }
+
+    nextGeneration() {
+        const addAllNeighbours = (all, tile) => {
+            this.getNeighbours(tile).forEach((neighbour) => {
+                all.add(neighbour);
+            });
+            return all;
+        };
+        const uniqueNeighbours = this.generation.reduce(addAllNeighbours, new Set);
+
+        return [...uniqueNeighbours].filter(this.getNextGeneration.bind(this));
     }
 
     isUnchanged() {
