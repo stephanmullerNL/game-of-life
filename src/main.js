@@ -26,6 +26,8 @@
 
         elements.startButton.addEventListener('click', start);
         elements.stopButton.addEventListener('click', stop);
+
+        create();
     }
 
     function create() {

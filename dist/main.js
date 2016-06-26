@@ -86,9 +86,9 @@ module.exports = class {
     /*** Tiles ***/
     getNextGeneration(currentTile) {
         const isAlive = (tile) =>  {
-            return this.generation.findIndex((genTile) => {
-                    return genTile.i === tile.i;
-                }) > -1;
+            return !!this.generation.find((genTile) => {
+                    return genTile.x === tile.x && genTile.y === tile.y;
+                });
         };
         let aliveNeighbours = this.getNeighbours(currentTile).filter(isAlive);
 
@@ -101,7 +101,6 @@ module.exports = class {
     getNeighbours(from) {
         const createNeighbour = (step) => {
             return {
-                i: from.i + (step.x + step.y * this.width),
                 x: from.x + step.x,
                 y: from.y + step.y
             };
@@ -116,7 +115,7 @@ module.exports = class {
             { x:  1, y:  0 },
             { x:  1, y:  1 }
         ];
-        const index = from.i;
+        const index = from.x + ',' + from.y;
 
         if (!this._neighboursCache[index]) {
             this._neighboursCache[index] = steps.map(createNeighbour);
@@ -127,10 +126,13 @@ module.exports = class {
 
     toCoordinates(index) {
         return {
-            i: index,
             x: Math.floor(index % this.width),
             y: Math.floor(index / this.width)
         }
+    }
+
+    toIndex(tile) {
+        return tile.x + tile.y * this.width;
     }
 
     // TODO: Move to separate class
@@ -158,8 +160,17 @@ module.exports = class {
     }
 
     drawGeneration() {
-        this._previousGeneration.forEach((tile) => this.setState(tile, 'visited'));
-        this.generation.forEach((tile) => this.setState(tile, 'alive'));
+        const inGrid = (tile) => {
+            return tile.x < this.width && tile.y < this.height;
+        };
+
+        this._previousGeneration
+            .filter(inGrid)
+            .forEach((tile) => this.setState(tile, 'visited'));
+
+        this.generation
+            .filter(inGrid)
+            .forEach((tile) => this.setState(tile, 'alive'));
     }
 
     getFirstGeneration() {
@@ -177,7 +188,8 @@ module.exports = class {
     }
 
     setState(tile, state) {
-        const element = this.tiles[tile.i];
+        const index = this.toIndex(tile);
+        const element = this.tiles[index];
 
         if (!element) {
             return;
@@ -226,6 +238,8 @@ module.exports = class {
 
         elements.startButton.addEventListener('click', start);
         elements.stopButton.addEventListener('click', stop);
+
+        create();
     }
 
     function create() {
