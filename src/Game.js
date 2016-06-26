@@ -1,4 +1,15 @@
-let neighbourCache = {};
+const STEPS = [
+    [-1, -1],
+    [-1,  0],
+    [-1,  1],
+    [ 0, -1],
+    [ 0,  1],
+    [ 1, -1],
+    [ 1,  0],
+    [ 1,  1]
+];
+
+let tiles = new Map();
 let stopped = false;
 let timeout;
 let onStopCallback;
@@ -12,7 +23,7 @@ module.exports = class {
         this.width = width;
         this.height = height;
 
-        this.tiles = [];
+        this.elements = [];
         this.generation = [];
         this._previousGeneration = [];
 
@@ -21,16 +32,17 @@ module.exports = class {
 
     /*** Controls ***/
     start() {
-        this._stopped = false;
+        stopped = false;
         this.element.classList.add('active');
 
         // TODO: Work with checkpoints
-        this.firstGeneration = this.getFirstGeneration();
-        this.generation = this.firstGeneration;
+        this.generation = this.firstGeneration = this.getFirstGeneration();
+
+        console.log('first', this.generation);
 
         this.drawGeneration();
 
-        this._timeout = setTimeout(this.live.bind(this), 1000);
+        timeout = setTimeout(this.live.bind(this), 1000);
     }
 
     reset() {
@@ -46,13 +58,13 @@ module.exports = class {
     }
 
     stop() {
-        clearTimeout(this._timeout);
-        this._stopped = true;
+        clearTimeout(timeout);
+        stopped = true;
         this.element.classList.remove('active');
     }
 
     onStopped(fn) {
-        this._onStopped = fn;
+        onStopCallback = fn;
     }
 
     /*** Game ***/
@@ -66,13 +78,13 @@ module.exports = class {
 
         isUnchanged = this.isUnchanged();
 
-        if (this._stopped) {
+        if (stopped) {
             console.log('Game stopped by user');
         } else if (isUnchanged) {
             console.log('Equilibrium reached, aborting');
-            this._onStopped();
+            onStopCallback();
         } else {
-            this._timeout = setTimeout(this.live.bind(this), 250);
+            timeout = setTimeout(this.live.bind(this), 250);
         }
     }
 
@@ -83,80 +95,91 @@ module.exports = class {
             });
             return all;
         };
-        const uniqueNeighbours = this.generation.reduce(addAllNeighbours, new Set);
+        const uniqueNeighbours = this.generation.reduce(addAllNeighbours, new Set());
+        console.log('unique', uniqueNeighbours);
+        let list = [...uniqueNeighbours];
+        console.log('list', list);
+        let filtered = list.filter(this.getNextGeneration.bind(this));
+        console.log('next generation', filtered);
 
-        return [...uniqueNeighbours].filter(this.getNextGeneration.bind(this));
+        this._previousGeneration.forEach((tile) => this.alive = false);
+        filtered.forEach((tile) => tile.alive = true);
+
+        return filtered;
     }
 
     isUnchanged() {
-        let previousVisible = this._previousGeneration.filter(this.isInGrid.bind(this));
-        let currentVisible = this.generation.filter(this.isInGrid.bind(this));
+        const isVisible = (tile) => tile.visible;
+        const hash = (list) => {
+            let coords = list.filter(isVisible).map((item) => item.coordinates);
+            return String(coords);
+        };
 
-        return JSON.stringify(previousVisible) === JSON.stringify(currentVisible);
+        return hash(this._previousGeneration) === hash(this.generation);
     }
 
     /*** Tiles ***/
-    getNextGeneration(currentTile) {
-        const isAlive = (tile) =>  {
-            return !!this.generation.find((genTile) => {
-                    return genTile.x === tile.x && genTile.y === tile.y;
-                });
-        };
-        let aliveNeighbours = this.getNeighbours(currentTile).filter(isAlive);
+    createTile(x, y, alive = false) {
+        let index = `${x},${y}`;
 
-        const survive = aliveNeighbours.length === 2 && isAlive(currentTile);
+        let tile = {
+            alive: alive,
+            coordinates: [x, y],
+            neighbours: [],
+            visible: x > -1 && x < this.width && y > -1 && y < this.height
+        };
+
+        tiles.set(index, tile);
+
+        return tile;
+    }
+
+    getTile(x, y) {
+        return tiles.get(`${x},${y}`);
+    }
+
+    getNextGeneration(currentTile) {
+        let aliveNeighbours = this.getNeighbours(currentTile).filter(this.isAlive.bind(this));
+
+        const survive = aliveNeighbours.length === 2 && this.isAlive(currentTile);
         const reproduce = aliveNeighbours.length === 3;
 
         return (survive || reproduce);
     }
 
     getNeighbours(from) {
-        const createNeighbour = (step) => {
-            return {
-                x: from.x + step.x,
-                y: from.y + step.y
-            };
-        };
-        const steps = [
-            { x: -1, y: -1 },
-            { x: -1, y:  0 },
-            { x: -1, y:  1 },
-            { x:  0, y: -1 },
-            { x:  0, y:  1 },
-            { x:  1, y: -1 },
-            { x:  1, y:  0 },
-            { x:  1, y:  1 }
-        ];
-        const index = from.x + ',' + from.y;
+        let [fromX, fromY] = from.coordinates;
 
-        if (!neighbourCache[index]) {
-            neighbourCache[index] = steps.map(createNeighbour);
+        const getOrCreateNeighbour = ([x, y]) => {
+            let newX = fromX + x;
+            let newY = fromY + y;
+
+            return this.getTile(newX, newY) || this.createTile(newX, newY);
+        };
+
+        if (!from.neighbours.length) {
+            from.neighbours = STEPS.map((step) => {
+                return getOrCreateNeighbour(step);
+            });
         }
 
-        return neighbourCache[index];
+        return from.neighbours;
     }
 
-    isInGrid(tile) {
-        return tile.x < this.width && tile.y < this.height;
-    };
-
-    toCoordinates(index) {
-        return {
-            x: Math.floor(index % this.width),
-            y: Math.floor(index / this.width)
-        }
+    isAlive(tile) {
+        return tile.alive;
     }
 
     toIndex(tile) {
-        return tile.x + tile.y * this.width;
+        let [x, y] = tile.coordinates;
+        return x + y * this.width;
     }
 
     // TODO: Move to separate class
     /*** Render game ***/
     createGame(pattern = []) {
         this.element.innerHTML = '';
-        this.tiles = [];
-        console.log('create', pattern);
+        this.elements = [];
 
         for(let i = 0; i < this.width * this.height; i++) {
             let checkbox = document.createElement('input');
@@ -171,44 +194,48 @@ module.exports = class {
             this.element.appendChild(checkbox);
             this.element.appendChild(label);
 
-            this.tiles.push(checkbox);
+            this.elements.push(checkbox);
         }
     }
 
     drawGeneration() {
         this._previousGeneration
-            .filter(this.isInGrid.bind(this))
+            .filter((tile) => tile.visible)
             .forEach((tile) => this.setState(tile, 'visited'));
 
         this.generation
-            .filter(this.isInGrid.bind(this))
+            .filter((tile) => tile.visible)
             .forEach((tile) => this.setState(tile, 'alive'));
     }
 
     exportTiles() {
-        return this.tiles
+        return this.elements
             .filter((tile) => tile.checked)
             .map((tile) => Number(tile.id))
             .join(',');
     }
 
     getFirstGeneration() {
-        const alreadyChecked = (element) => {
+        const isChecked = (element) => {
             return element.checked;
         };
-        const getIndex = (element) => {
-            return Number(element.id);
+        const createTile = (coordinates) => {
+            return this.createTile(...coordinates, true);
+        };
+        const getCoordinates = (element) => {
+            let id = Number(element.id);
+            return [id % this.width, Math.floor(id / this.width)];
         };
 
-        return this.tiles
-            .filter(alreadyChecked)
-            .map(getIndex)
-            .map(this.toCoordinates.bind(this));
+        return this.elements
+            .filter(isChecked)
+            .map(getCoordinates)
+            .map(createTile);
     }
 
     setState(tile, state) {
         const index = this.toIndex(tile);
-        const element = this.tiles[index];
+        const element = this.elements[index];
 
         if (!element) {
             return;
