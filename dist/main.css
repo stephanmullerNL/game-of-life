@@ -1,17 +1,18 @@
 body {
     font-size: 10px;
     margin: 0 auto;
-    width: 80em;
+    min-width: 44em;
+    max-width: 80em;
+    padding: 2em;
 }
 
 /*** Controls ***/
 section {
     background: #eee;
     border: 1px solid #999;
-    box-sizing: border-box;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    margin: 1em 0;
     padding: 1em;
-    margin: 1em;
 }
 
 textarea {
