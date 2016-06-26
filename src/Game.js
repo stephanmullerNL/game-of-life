@@ -1,9 +1,12 @@
 let neighbourCache = {};
+let stopped = false;
+let timeout;
+let onStopCallback;
 
 module.exports = class {
 
     // TODO: Make entirely functional, move all DOM logic somewhere else
-    constructor(element, width, height) {
+    constructor(element, width, height, imported) {
         this.element = element;
 
         this.width = width;
@@ -13,10 +16,7 @@ module.exports = class {
         this.generation = [];
         this._previousGeneration = [];
 
-        // temp
-        let pattern = [1, 42, 80, 81, 82];
-
-        this.createGame(pattern);
+        this.createGame(imported);
     }
 
     /*** Controls ***/
@@ -183,6 +183,13 @@ module.exports = class {
         this.generation
             .filter(this.isInGrid.bind(this))
             .forEach((tile) => this.setState(tile, 'alive'));
+    }
+
+    exportTiles() {
+        return this.tiles
+            .filter((tile) => tile.checked)
+            .map((tile) => Number(tile.id))
+            .join(',');
     }
 
     getFirstGeneration() {

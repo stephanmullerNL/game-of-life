@@ -15,7 +15,12 @@
         stopButton: document.getElementById('stop'),
 
         clearButton: document.getElementById('clear'),
-        resetButton: document.getElementById('reset')
+        resetButton: document.getElementById('reset'),
+
+        // Other
+        import: document.getElementById('import'),
+        export: document.getElementById('export'),
+        exportButton: document.getElementById('exportButton')
     };
 
     let game;
@@ -27,14 +32,18 @@
         elements.startButton.addEventListener('click', start);
         elements.stopButton.addEventListener('click', stop);
 
+        elements.exportButton.addEventListener('click', exportState);
+
         create();
     }
 
     function create() {
         stop();
 
+        let importTiles = elements.import.value.split(',').map(Number);
+
         // todo: customize dimensions
-        game = new Game(elements.game, 40, 40);
+        game = new Game(elements.game, 40, 40, importTiles);
 
         game.onStopped(stop);
 
@@ -46,6 +55,7 @@
 
         disable(elements.createButton);
         disable(elements.startButton);
+        disable(elements.exportButton);
 
         game.start();
     }
@@ -57,12 +67,19 @@
         enable(elements.createButton);
         enable(elements.startButton);
         enable(elements.resetButton);
+        enable(elements.exportButton);
     }
 
     function reset() {
         disable(elements.resetButton);
 
         game && game.reset();
+    }
+
+    function exportState() {
+        let tiles = game && game.exportTiles() || '';
+
+        elements.export.value = tiles;
     }
 
     function disable(element) {

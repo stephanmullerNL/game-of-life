@@ -1,10 +1,13 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 let neighbourCache = {};
+let stopped = false;
+let timeout;
+let onStopCallback;
 
 module.exports = class {
 
     // TODO: Make entirely functional, move all DOM logic somewhere else
-    constructor(element, width, height) {
+    constructor(element, width, height, imported) {
         this.element = element;
 
         this.width = width;
@@ -14,10 +17,7 @@ module.exports = class {
         this.generation = [];
         this._previousGeneration = [];
 
-        // temp
-        let pattern = [1, 42, 80, 81, 82];
-
-        this.createGame(pattern);
+        this.createGame(imported);
     }
 
     /*** Controls ***/
@@ -58,22 +58,10 @@ module.exports = class {
 
     /*** Game ***/
     live() {
-        const noDuplicates = (tile, index, all) => {
-            return all.indexOf(tile) === index;
-        };
-        const addAllNeighbours = (all, tile) => {
-            all = all.concat(this.getNeighbours(tile));
-            return all;
-        };
-
         let isUnchanged;
 
         this._previousGeneration = this.generation;
-
-        this.generation = this.generation
-            .reduce(addAllNeighbours, [])
-            .filter(noDuplicates)
-            .filter(this.getNextGeneration.bind(this));
+        this.generation = this.nextGeneration();
 
         this.drawGeneration();
 
@@ -87,6 +75,18 @@ module.exports = class {
         } else {
             this._timeout = setTimeout(this.live.bind(this), 250);
         }
+    }
+
+    nextGeneration() {
+        const addAllNeighbours = (all, tile) => {
+            this.getNeighbours(tile).forEach((neighbour) => {
+                all.add(neighbour);
+            });
+            return all;
+        };
+        const uniqueNeighbours = this.generation.reduce(addAllNeighbours, new Set);
+
+        return [...uniqueNeighbours].filter(this.getNextGeneration.bind(this));
     }
 
     isUnchanged() {
@@ -186,6 +186,13 @@ module.exports = class {
             .forEach((tile) => this.setState(tile, 'alive'));
     }
 
+    exportTiles() {
+        return this.tiles
+            .filter((tile) => tile.checked)
+            .map((tile) => Number(tile.id))
+            .join(',');
+    }
+
     getFirstGeneration() {
         const alreadyChecked = (element) => {
             return element.checked;
@@ -240,7 +247,12 @@ module.exports = class {
         stopButton: document.getElementById('stop'),
 
         clearButton: document.getElementById('clear'),
-        resetButton: document.getElementById('reset')
+        resetButton: document.getElementById('reset'),
+
+        // Other
+        import: document.getElementById('import'),
+        export: document.getElementById('export'),
+        exportButton: document.getElementById('exportButton')
     };
 
     let game;
@@ -252,14 +264,18 @@ module.exports = class {
         elements.startButton.addEventListener('click', start);
         elements.stopButton.addEventListener('click', stop);
 
+        elements.exportButton.addEventListener('click', exportState);
+
         create();
     }
 
     function create() {
         stop();
 
+        let importTiles = elements.import.value.split(',').map(Number);
+
         // todo: customize dimensions
-        game = new Game(elements.game, 40, 40);
+        game = new Game(elements.game, 40, 40, importTiles);
 
         game.onStopped(stop);
 
@@ -271,6 +287,7 @@ module.exports = class {
 
         disable(elements.createButton);
         disable(elements.startButton);
+        disable(elements.exportButton);
 
         game.start();
     }
@@ -282,12 +299,19 @@ module.exports = class {
         enable(elements.createButton);
         enable(elements.startButton);
         enable(elements.resetButton);
+        enable(elements.exportButton);
     }
 
     function reset() {
         disable(elements.resetButton);
 
         game && game.reset();
+    }
+
+    function exportState() {
+        let tiles = game && game.exportTiles() || '';
+
+        elements.export.value = tiles;
     }
 
     function disable(element) {

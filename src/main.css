@@ -4,6 +4,22 @@ body {
     width: 80em;
 }
 
+/*** Controls ***/
+section {
+    background: #eee;
+    border: 1px solid #999;
+    box-sizing: border-box;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    padding: 1em;
+    margin: 1em;
+}
+
+textarea {
+    margin: .2em 0 .5em;
+    width: 100%;
+}
+
+/*** Game area ***/
 #game {
     border: solid black;
     border-width: 0 1px 1px 0;
@@ -17,13 +33,6 @@ body {
     pointer-events: none;
 }
 
-section {
-    background: #eee;
-    border: 1px solid #999;
-    box-sizing: border-box;
-    padding: 1em;
-    margin: 1em;
-}
 
 input[type=checkbox] {
     position: absolute;
@@ -46,6 +55,7 @@ input:checked + label {
     background: black;
 }
 
+/*** Other ***/
 footer {
     background: #eee;
     font-size: 1.6em;
