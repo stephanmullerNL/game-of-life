@@ -53,6 +53,7 @@ module.exports = class {
         this.generation = this.firstGeneration;
 
         pattern = this.generation
+                    .map((tile) => tile.coordinates)
                     .map(this.toIndex.bind(this));
 
         this.createGame(pattern);
@@ -70,40 +71,37 @@ module.exports = class {
 
     /*** Game ***/
     live() {
-        let isUnchanged;
-
         this._previousGeneration = this.generation;
         this.generation = this.nextGeneration();
 
         this.drawGeneration();
 
-        isUnchanged = this.isUnchanged();
-
         if (stopped) {
             console.log('Game stopped by user');
-        } else if (isUnchanged) {
+
+        } else if (this.isUnchanged()) {
             console.log('Equilibrium reached, aborting');
             onStopCallback();
+
         } else {
             timeout = setTimeout(this.live.bind(this), 250);
         }
     }
 
     nextGeneration() {
-        const addAllNeighbours = (all, tile) => {
+        const getAllNeighbours = (all, tile) => {
             this.getNeighbours(tile).forEach((neighbour) => {
                 all.add(neighbour);
             });
             return all;
         };
-        const uniqueNeighbours = this.generation.reduce(addAllNeighbours, new Set());
-        console.log('unique', uniqueNeighbours);
-        let list = [...uniqueNeighbours];
-        console.log('list', list);
-        let filtered = list.filter(this.getNextGeneration.bind(this));
+        const uniqueNeighbours = this.generation.reduce(getAllNeighbours, new Set());
+
+        let filtered = [...uniqueNeighbours]
+            .filter(this.getNextGeneration.bind(this));
         console.log('next generation', filtered);
 
-        this._previousGeneration.forEach((tile) => this.alive = false);
+        this._previousGeneration.forEach((tile) => tile.alive = false);
         filtered.forEach((tile) => tile.alive = true);
 
         return filtered;
