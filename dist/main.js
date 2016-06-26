@@ -1,4 +1,6 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+let neighbourCache = {};
+
 module.exports = class {
 
     // TODO: Make entirely functional, move all DOM logic somewhere else
@@ -11,7 +13,6 @@ module.exports = class {
         this.tiles = [];
         this.generation = [];
         this._previousGeneration = [];
-        this._neighboursCache = {};
 
         // temp
         let pattern = [1, 42, 80, 81, 82];
@@ -61,7 +62,7 @@ module.exports = class {
         let isUnchanged;
 
         // TODO: keep list of past generation hashes to check stabilization over multiple generations
-        this._previousGeneration = [].concat(this.generation);
+        this._previousGeneration = this.generation.slice(0);
 
         this.generation = this.generation
             .reduce(addAllNeighbours, [])
@@ -71,7 +72,7 @@ module.exports = class {
         this.drawGeneration();
 
         // TODO: only track visible part of the generation
-        isUnchanged = JSON.stringify(this._previousGeneration) === JSON.stringify(this.generation);
+        isUnchanged = this.isUnchanged();
 
         if (this._stopped) {
             console.log('Game stopped by user');
@@ -81,6 +82,13 @@ module.exports = class {
         } else {
             this._timeout = setTimeout(this.live.bind(this), 250);
         }
+    }
+
+    isUnchanged() {
+        let previousVisible = this._previousGeneration.filter(this.isInGrid.bind(this));
+        let currentVisible = this.generation.filter(this.isInGrid.bind(this));
+
+        return JSON.stringify(previousVisible) === JSON.stringify(currentVisible);
     }
 
     /*** Tiles ***/
@@ -117,12 +125,16 @@ module.exports = class {
         ];
         const index = from.x + ',' + from.y;
 
-        if (!this._neighboursCache[index]) {
-            this._neighboursCache[index] = steps.map(createNeighbour);
+        if (!neighbourCache[index]) {
+            neighbourCache[index] = steps.map(createNeighbour);
         }
 
-        return this._neighboursCache[index];
+        return neighbourCache[index];
     }
+
+    isInGrid(tile) {
+        return tile.x < this.width && tile.y < this.height;
+    };
 
     toCoordinates(index) {
         return {
@@ -160,16 +172,12 @@ module.exports = class {
     }
 
     drawGeneration() {
-        const inGrid = (tile) => {
-            return tile.x < this.width && tile.y < this.height;
-        };
-
         this._previousGeneration
-            .filter(inGrid)
+            .filter(this.isInGrid.bind(this))
             .forEach((tile) => this.setState(tile, 'visited'));
 
         this.generation
-            .filter(inGrid)
+            .filter(this.isInGrid.bind(this))
             .forEach((tile) => this.setState(tile, 'alive'));
     }
 
