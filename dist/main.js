@@ -23,6 +23,7 @@ module.exports = class {
     /*** Controls ***/
     start() {
         this._stopped = false;
+        this.element.classList.add('active');
 
         // TODO: Work with checkpoints
         this.firstGeneration = this.getFirstGeneration();
@@ -43,6 +44,7 @@ module.exports = class {
     stop() {
         clearTimeout(this._timeout);
         this._stopped = true;
+        this.element.classList.remove('active');
     }
 
     onStopped(fn) {
@@ -155,7 +157,6 @@ module.exports = class {
             let checkbox = document.createElement('input');
             let label = document.createElement('label');
 
-            // TODO: Add event to update state by clicking during gameplay ?
             checkbox.type = 'checkbox';
             checkbox.id = i;
             checkbox.checked = pattern.indexOf(i) > -1;

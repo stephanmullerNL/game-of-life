@@ -13,6 +13,10 @@ body {
     width: 44em;
 }
 
+#game.active {
+    pointer-events: none;
+}
+
 section {
     background: #eee;
     border: 1px solid #999;
