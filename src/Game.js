@@ -8,7 +8,7 @@ const STEPS = [
     [ 1,  0],
     [ 1,  1]
 ];
-const GENERATION_TIMEOUT = 25;
+const GENERATION_TIMEOUT = 10;
 
 let tiles = new Map();
 let stopped = false;
@@ -141,8 +141,7 @@ module.exports = class {
         });
 
         return all;
-    };
-
+    }
 
     getNeighbours(from) {
         let [fromX, fromY] = from.coordinates;
@@ -252,4 +251,26 @@ module.exports = class {
         }
     }
 
+
+    drawMirrorMode() {
+        [...document.querySelectorAll('input')].forEach((el) => {
+            el.addEventListener('click', (ev) => {
+                let id = Number(ev.target.id);
+                let [x, y] = [id % 41, Math.floor(id / 41)];
+                let mirror = [
+                    [40 - x, y],
+                    [x, 40 - y],
+                    [40 - x, 40 - y]
+                ];
+                mirror.map(([x, y]) => x + y * 41).forEach((id) => {
+                    document.getElementById(id).checked = ev.target.checked;
+                })
+            })
+        });
+    }
+
+    resize(x) {
+        let y = x.map(i => (i % 41) + (Math.floor(i / 41) * 99)).join(',');
+        let z = y.split(',').map(i => (i % 99) + 29 + (Math.floor(i / 99) + 29) * 99 ).join(',');
+    }
 };

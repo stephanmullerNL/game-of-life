@@ -9,11 +9,13 @@ const STEPS = [
     [ 1,  0],
     [ 1,  1]
 ];
+const GENERATION_TIMEOUT = 10;
 
 let tiles = new Map();
 let stopped = false;
 let timeout;
 let onStopCallback;
+
 
 module.exports = class {
 
@@ -42,11 +44,11 @@ module.exports = class {
 
         this.drawGeneration();
 
-        timeout = setTimeout(this.live.bind(this), 1000);
+        timeout = setTimeout(this.live.bind(this), GENERATION_TIMEOUT);
     }
 
     reset() {
-        let pattern = this.firstGeneration.map(this.toIndex.bind(this));;
+        let pattern = this.firstGeneration.map(this.toIndex.bind(this));
 
         tiles.forEach((tile) => {
             tile.alive = false;
@@ -85,7 +87,7 @@ module.exports = class {
             onStopCallback();
 
         } else {
-            timeout = setTimeout(this.live.bind(this), 250);
+            timeout = setTimeout(this.live.bind(this), GENERATION_TIMEOUT);
         }
     }
 
@@ -140,8 +142,7 @@ module.exports = class {
         });
 
         return all;
-    };
-
+    }
 
     getNeighbours(from) {
         let [fromX, fromY] = from.coordinates;
@@ -251,6 +252,28 @@ module.exports = class {
         }
     }
 
+
+    drawMirrorMode() {
+        [...document.querySelectorAll('input')].forEach((el) => {
+            el.addEventListener('click', (ev) => {
+                let id = Number(ev.target.id);
+                let [x, y] = [id % 41, Math.floor(id / 41)];
+                let mirror = [
+                    [40 - x, y],
+                    [x, 40 - y],
+                    [40 - x, 40 - y]
+                ];
+                mirror.map(([x, y]) => x + y * 41).forEach((id) => {
+                    document.getElementById(id).checked = ev.target.checked;
+                })
+            })
+        });
+    }
+
+    resize(x) {
+        let y = x.map(i => (i % 41) + (Math.floor(i / 41) * 99)).join(',');
+        let z = y.split(',').map(i => (i % 99) + 29 + (Math.floor(i / 99) + 29) * 99 ).join(',');
+    }
 };
 },{}],2:[function(require,module,exports){
 (function () {
@@ -298,7 +321,7 @@ module.exports = class {
         let importTiles = elements.import.value.split(',').map(Number);
 
         // todo: customize dimensions
-        game = new Game(elements.game, 40, 40, importTiles);
+        game = new Game(elements.game, 99, 99, importTiles);
 
         game.onStopped(stop);
 

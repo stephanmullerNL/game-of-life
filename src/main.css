@@ -1,8 +1,6 @@
 body {
     font-size: 10px;
     margin: 0 auto;
-    min-width: 44em;
-    max-width: 80em;
     padding: 2em;
 }
 
@@ -27,7 +25,7 @@ textarea {
     display: block;
     margin: 0 auto;
     overflow: auto;
-    width: 44em;
+    width: 99em;
 }
 
 #game.active {
@@ -43,6 +41,7 @@ input[type=checkbox] {
 label {
     border: solid black;
     border-width: 1px 0 0 1px;
+    box-sizing: border-box;
     display: inline-block;
     height: 1em;
     width: 1em;

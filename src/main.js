@@ -43,7 +43,7 @@
         let importTiles = elements.import.value.split(',').map(Number);
 
         // todo: customize dimensions
-        game = new Game(elements.game, 40, 40, importTiles);
+        game = new Game(elements.game, 99, 99, importTiles);
 
         game.onStopped(stop);
 
