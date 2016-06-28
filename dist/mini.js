@@ -1,3 +1,10 @@
+
+// NOTE: borders break because coords to index automatically wraps
+// either fix that (hard), or pass coords around and only convert to index at draw time
+// This means saving the current generation as some kind of hash map to prevent loss of
+// object (tuple) reference. Or save as string??
+
+
 function gameOfLife(initial, width, height, maxGenerations) {
 
     const CELLS = width * height;
