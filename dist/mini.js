@@ -3,7 +3,7 @@ function gameOfLife(initial, width, height, maxGenerations) {
     const CELLS = width * height;
     const ALIVE = '#';
     const DEAD = '-';
-    //const NEIGHBOUR_CACHE = new Map();
+    const NEIGHBOUR_CACHE = new Map();
 
     const coordinatesToIndex = ([x, y]) => x + y * width;
     const indexToCoordinates = (i) => [i % width, Math.floor(i / width)];
@@ -26,7 +26,8 @@ function gameOfLife(initial, width, height, maxGenerations) {
         let allNeighbours = generation.reduce(getAllUniqueNeighbours, new Set());
 
         generation = [...allNeighbours].reduce((all, cell) => {
-            let aliveNeighbours = getNeighbours(cell).filter(isAlive).length;
+            let coordinates = indexToCoordinates(cell);
+            let aliveNeighbours = (NEIGHBOUR_CACHE.get(coordinates) || getNeighbours(cell)).filter(isAlive).length;
 
             let survive = aliveNeighbours === 2 && isAlive(cell);
             let reproduce = aliveNeighbours === 3;
@@ -42,7 +43,7 @@ function gameOfLife(initial, width, height, maxGenerations) {
 
         if (count++ < maxGenerations && generation.length > 0) {
             setTimeout(nextGeneration, 100);
-        } else console.log('end');
+        }
     }
 
     function getNeighbours(cell) {
@@ -61,10 +62,14 @@ function gameOfLife(initial, width, height, maxGenerations) {
             [ 1, 1]
         ];
 
-        return directions
+        let neighbours = directions
                 .map(takeStep)
                 .filter(inGrid)
                 .map(coordinatesToIndex);
+
+        NEIGHBOUR_CACHE.set(String([x,y]), neighbours);
+
+        return neighbours;
     }
 
 
