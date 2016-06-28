@@ -6,7 +6,8 @@ function gameOfLife(initial, width, height, maxGenerations) {
     //const NEIGHBOUR_CACHE = new Map();
 
     const coordinatesToIndex = ([x, y]) => x + y * width;
-    const isAlive = i => generation.includes(i);
+    const indexToCoordinates = (i) => [i % width, Math.floor(i / width)];
+    const isAlive = (i) => generation.includes(i);
 
     let generation = initial.map(coordinatesToIndex);
     let count = 0;
@@ -27,12 +28,13 @@ function gameOfLife(initial, width, height, maxGenerations) {
         generation = [...allNeighbours].reduce((all, cell) => {
             let aliveNeighbours = getNeighbours(cell).filter(isAlive).length;
 
-            let survive = aliveNeighbours.length === 2 && isAlive(cell);
-            let reproduce = aliveNeighbours.length === 3;
+            let survive = aliveNeighbours === 2 && isAlive(cell);
+            let reproduce = aliveNeighbours === 3;
 
             if(survive || reproduce) {
                 all.push(cell);
             }
+
             return all;
         }, []);
 
@@ -40,24 +42,29 @@ function gameOfLife(initial, width, height, maxGenerations) {
 
         if (count++ < maxGenerations && generation.length > 0) {
             setTimeout(nextGeneration, 100);
-        }
+        } else console.log('end');
     }
 
     function getNeighbours(cell) {
+        let [x, y] = indexToCoordinates(cell);
+
+        const takeStep = ([stepX, stepY]) => [x + stepX, y + stepY];
+        const inGrid = ([x, y]) => (x >= 0 && x < width) && (y >= 0 && y < height);
         const directions = [
-            -1 - width,
-            -1 + width,
-            -1,
-             1 - width,
-             1 + width,
-             1,
-            -width,
-             width
+            [-1,-1],
+            [-1, 0],
+            [-1, 1],
+            [ 0,-1],
+            [ 0, 1],
+            [ 1,-1],
+            [ 1, 0],
+            [ 1, 1]
         ];
 
         return directions
-                .map(direction => cell + direction)
-                .filter(cell => cell > -1 && cell < CELLS);
+                .map(takeStep)
+                .filter(inGrid)
+                .map(coordinatesToIndex);
     }
 
 
