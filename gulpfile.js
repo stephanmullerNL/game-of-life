@@ -30,6 +30,11 @@ var js = {
     dist: 'dist/'
 };
 
+var jsMini = {
+    src: 'src/mini/mini.js',
+    dist: 'dist/'
+};
+
 var css = {
     src: 'src/',
     main: 'main.css',
@@ -98,7 +103,7 @@ gulp.task('css', function () {
         .pipe(gulp.dest(css.dist));
 });
 
-// Task - Devolopment
+// Task - Development
 gulp.task('dev', ['js-dev']);
 
 // Task - Production
@@ -113,6 +118,20 @@ gulp.task('watch', ['sync'], function () {
         return gulp.src(file.path)
             .pipe(reload({stream: true}));
     });
+});
+
+
+// Task - mini
+gulp.task('mini', ['sync'], function () {
+    gulp.src(jsMini.src)
+        .pipe(hint('.jshintrc'))
+        .pipe(hint.reporter(stylish));
+
+    gulp.watch(jsMini.src, ['mini']);
+
+    return gulp.src(jsMini.src)
+        .pipe(gulp.dest(jsMini.dist))
+        .pipe(reload({stream: true}));
 });
 
 // Task - Default
