@@ -109,10 +109,6 @@ gulp.task('watch', ['sync'], function () {
 
     gulp.watch(js.src + '**/*.js', ['js-dev']);
     gulp.watch(css.src + '**/*.css', ['css']);
-    gulp.watch('**/*.php').on('change', function (file) {
-        return gulp.src(file.path)
-            .pipe(reload({stream: true}));
-    });
     gulp.watch('**/*.html').on('change', function (file) {
         return gulp.src(file.path)
             .pipe(reload({stream: true}));
