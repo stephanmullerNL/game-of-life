@@ -26,7 +26,7 @@ function gameOfLife(initial, width, height, maxGenerations) {
         let allNeighbours = generation.reduce(getAllUniqueNeighbours, new Set());
 
         generation = [...allNeighbours].reduce((all, cell) => {
-            let coordinates = indexToCoordinates(cell);
+            let coordinates = String(indexToCoordinates(cell));
             let aliveNeighbours = (NEIGHBOUR_CACHE.get(coordinates) || getNeighbours(cell)).filter(isAlive).length;
 
             let survive = aliveNeighbours === 2 && isAlive(cell);
@@ -42,7 +42,7 @@ function gameOfLife(initial, width, height, maxGenerations) {
         draw();
 
         if (count++ < maxGenerations && generation.length > 0) {
-            setTimeout(nextGeneration, 100);
+            setTimeout(nextGeneration, 0);
         }
     }
 
