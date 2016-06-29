@@ -1,9 +1,4 @@
 
-// NOTE: borders break because coords to index automatically wraps
-// either fix that (hard), or pass coords around and only convert to index at draw time
-// This means saving the current generation as some kind of hash map to prevent loss of
-// object (tuple) reference. Or save as string??
-
 
 function gameOfLife(initial, width, height, maxGenerations) {
 
@@ -12,14 +7,15 @@ function gameOfLife(initial, width, height, maxGenerations) {
     const DEAD = '-';
     const NEIGHBOUR_CACHE = new Map();
 
-    const coordinatesToIndex = ([x, y]) => x + y * width;
-    const indexToCoordinates = (i) => [i % width, Math.floor(i / width)];
-    const isAlive = (i) => generation.includes(i);
+    const getCoordinates = (i) => [i % width, Math.floor(i / width)];
+    const isAlive = (i) => generation.has(String(i));
 
-    let generation = initial.map(coordinatesToIndex);
     let count = 0;
+    let generation;
 
     function init() {
+        generation = initial.reduce((all, cell) => all.set(String(cell), cell), new Map());
+
         draw();
         nextGeneration();
     }
@@ -30,34 +26,29 @@ function gameOfLife(initial, width, height, maxGenerations) {
             return all;
         };
 
-        let allNeighbours = generation.reduce(getAllUniqueNeighbours, new Set());
+        let allNeighbours = [...generation.values()].reduce(getAllUniqueNeighbours, new Set());
 
         generation = [...allNeighbours].reduce((all, cell) => {
-            let coordinates = String(indexToCoordinates(cell));
-            let aliveNeighbours = (NEIGHBOUR_CACHE.get(coordinates) || getNeighbours(cell)).filter(isAlive).length;
+            let neighbours = (NEIGHBOUR_CACHE.get(String(cell)) || getNeighbours(cell));
+            let aliveNeighbours = neighbours.filter(isAlive).length;
 
             let survive = aliveNeighbours === 2 && isAlive(cell);
             let reproduce = aliveNeighbours === 3;
 
-            if(survive || reproduce) {
-                all.push(cell);
-            }
-
-            return all;
-        }, []);
+            return (survive || reproduce) ? all.set(String(cell), cell) : all
+        }, new Map());
 
         draw();
 
-        if (count++ < maxGenerations && generation.length > 0) {
+        if (count++ < maxGenerations && generation.size > 0) {
             setTimeout(nextGeneration, 0);
         }
     }
 
     function getNeighbours(cell) {
-        let [x, y] = indexToCoordinates(cell);
+        let [x, y] = cell;
 
         const takeStep = ([stepX, stepY]) => [x + stepX, y + stepY];
-        const inGrid = ([x, y]) => (x >= 0 && x < width) && (y >= 0 && y < height);
         const directions = [
             [-1,-1],
             [-1, 0],
@@ -70,21 +61,18 @@ function gameOfLife(initial, width, height, maxGenerations) {
         ];
 
         let neighbours = directions
-                .map(takeStep)
-                .filter(inGrid)
-                .map(coordinatesToIndex);
+                .map(takeStep);
 
         NEIGHBOUR_CACHE.set(String([x,y]), neighbours);
 
         return neighbours;
     }
 
-
     function draw() {
         let board = '';
 
         for (let i = 0; i < CELLS; i++) {
-            board += isAlive(i) ? ALIVE : DEAD;
+            board += isAlive(getCoordinates(i)) ? ALIVE : DEAD;
 
             if ((i + 1) % width === 0) {
                 board += "\n";
