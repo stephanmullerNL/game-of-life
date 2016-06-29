@@ -1,5 +1,3 @@
-
-
 function gameOfLife(initial, width, height, maxGenerations) {
 
     const CELLS = width * height;
@@ -8,39 +6,39 @@ function gameOfLife(initial, width, height, maxGenerations) {
     const NEIGHBOUR_CACHE = new Map();
 
     const getCoordinates = (i) => [i % width, Math.floor(i / width)];
-    const isAlive = (i) => generation.has(String(i));
+    const isAlive = (cell) => {
+        return !!generation.find(i => cell[0] === i[0] && cell[1] === i[1]);
+    };
 
     let count = 0;
-    let generation;
+    let generation = initial;
 
     function init() {
-        generation = initial.reduce((all, cell) => all.set(String(cell), cell), new Map());
-
         draw();
         nextGeneration();
     }
 
     function nextGeneration() {
         const getAllUniqueNeighbours = (all, cell) => {
-            getNeighbours(cell).forEach((neighbour) => all.add(neighbour));
+            getNeighbours(cell).forEach((neighbour) => all.add(String(neighbour)));
             return all;
         };
 
-        let allNeighbours = [...generation.values()].reduce(getAllUniqueNeighbours, new Set());
+        let allNeighbours = generation.reduce(getAllUniqueNeighbours, new Set());
 
-        generation = [...allNeighbours].reduce((all, cell) => {
-            let neighbours = (NEIGHBOUR_CACHE.get(String(cell)) || getNeighbours(cell));
-            let aliveNeighbours = neighbours.filter(isAlive).length;
+        generation = [...allNeighbours].map(i => i.split(',').map(Number))
+            .filter((cell) => {
+                let aliveNeighbours = getNeighbours(cell).filter(isAlive).length;
 
-            let survive = aliveNeighbours === 2 && isAlive(cell);
-            let reproduce = aliveNeighbours === 3;
+                let survive = aliveNeighbours === 2 && isAlive(cell);
+                let reproduce = aliveNeighbours === 3;
 
-            return (survive || reproduce) ? all.set(String(cell), cell) : all
-        }, new Map());
+                return (survive || reproduce)
+            });
 
         draw();
 
-        if (count++ < maxGenerations && generation.size > 0) {
+        if (count++ < maxGenerations && generation.length > 0) {
             setTimeout(nextGeneration, 0);
         }
     }
@@ -49,21 +47,14 @@ function gameOfLife(initial, width, height, maxGenerations) {
         let [x, y] = cell;
 
         const takeStep = ([stepX, stepY]) => [x + stepX, y + stepY];
-        const directions = [
-            [-1,-1],
-            [-1, 0],
-            [-1, 1],
-            [ 0,-1],
-            [ 0, 1],
-            [ 1,-1],
-            [ 1, 0],
-            [ 1, 1]
-        ];
+        const directions = [ [-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1] ];
 
-        let neighbours = directions
-                .map(takeStep);
+        let neighbours = NEIGHBOUR_CACHE.get(String(cell));
 
-        NEIGHBOUR_CACHE.set(String([x,y]), neighbours);
+        if(!neighbours) {
+            neighbours = directions.map(takeStep);
+            NEIGHBOUR_CACHE.set(String(cell), neighbours);
+        }
 
         return neighbours;
     }
