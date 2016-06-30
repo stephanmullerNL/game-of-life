@@ -12,6 +12,7 @@ function gameOfLife(initial, width, height, maxGenerations) {
 
     let count = 0;
     let generation;
+    let allCoordinates = new Array(width * height).fill(0).map((val, i) => String(getCoordinates(i)));
 
     function init() {
         generation = initial.reduce((all, cell) => all.set(String(cell), cell), new Map());
@@ -60,10 +61,12 @@ function gameOfLife(initial, width, height, maxGenerations) {
             [ 1, 1]
         ];
 
-        let neighbours = directions
-                .map(takeStep);
+        let neighbours = NEIGHBOUR_CACHE.get(String(cell));
 
-        NEIGHBOUR_CACHE.set(String([x,y]), neighbours);
+        if(!neighbours) {
+            neighbours = directions.map(takeStep);
+            NEIGHBOUR_CACHE.set(String([cell]), neighbours);
+        }
 
         return neighbours;
     }
@@ -72,7 +75,7 @@ function gameOfLife(initial, width, height, maxGenerations) {
         let board = '';
 
         for (let i = 0; i < CELLS; i++) {
-            board += isAlive(getCoordinates(i)) ? ALIVE : DEAD;
+            board += generation.has(allCoordinates[i]) ? ALIVE : DEAD;
 
             if ((i + 1) % width === 0) {
                 board += "\n";
