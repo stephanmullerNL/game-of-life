@@ -1,5 +1,3 @@
-
-
 function gameOfLife(initial, width, height, maxGenerations) {
 
     const CELLS = width * height;
@@ -14,10 +12,10 @@ function gameOfLife(initial, width, height, maxGenerations) {
     };
 
     let count = 0;
-    let generation = new Set(initial.map(String));
+    let generation = new Set(initial);
     let allCells = new Array(CELLS).fill(0).map(getCoordinates);
 
-    function init() {
+    function start() {
         draw();
         nextGeneration();
     }
@@ -30,10 +28,10 @@ function gameOfLife(initial, width, height, maxGenerations) {
 
         let allNeighbours = [...generation].reduce(getAllUniqueNeighbours, new Set());
 
-        generation = new Set([...allNeighbours].filter((cellString) => {
-            let aliveNeighbours = getNeighbours(cellString).filter(isAlive).length;
+        generation = new Set([...allNeighbours].filter((cell) => {
+            let aliveNeighbours = getNeighbours(cell).filter(isAlive).length;
 
-            let survive = aliveNeighbours === 2 && isAlive(cellString);
+            let survive = aliveNeighbours === 2 && isAlive(cell);
             let reproduce = aliveNeighbours === 3;
 
             return (survive || reproduce)
@@ -73,16 +71,12 @@ function gameOfLife(initial, width, height, maxGenerations) {
     }
 
     function draw() {
-        //const cellSet = new Set(generation);
-
         let board = '';
-
 
         for(let i = 0; i < CELLS; i++) {
             let cell = allCells[i];
 
-            if(generation.has(cell)) board +=  ALIVE ;
-            else board += DEAD;
+            board += (isAlive(cell)) ? ALIVE : DEAD;
 
             if ((i + 1) % width === 0) {
                 board += "\n";
@@ -92,5 +86,5 @@ function gameOfLife(initial, width, height, maxGenerations) {
         document.body.innerText = board;
     }
 
-    init();
+    start();
 }
