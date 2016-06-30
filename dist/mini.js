@@ -7,16 +7,17 @@ function gameOfLife(initial, width, height, maxGenerations) {
     const DEAD = '-';
     const NEIGHBOUR_CACHE = new Map();
 
-    const getCoordinates = (i) => [i % width, Math.floor(i / width)];
     const isAlive = (i) => generation.has(String(i));
+    const getCoordinates = (val, i) => {
+        let coordinates = [i % width, Math.floor(i / width)];
+        return String(coordinates);
+    };
 
     let count = 0;
-    let generation;
-    let allCoordinates = new Array(width * height).fill(0).map((val, i) => String(getCoordinates(i)));
+    let generation = initial.reduce((all, cell) => all.set(String(cell), cell), new Map());
+    let allCoordinates = new Array(width * height).fill(0).map(getCoordinates);
 
     function init() {
-        generation = initial.reduce((all, cell) => all.set(String(cell), cell), new Map());
-
         draw();
         nextGeneration();
     }
