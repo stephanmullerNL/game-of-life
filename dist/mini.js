@@ -7,15 +7,15 @@ function gameOfLife(initial, width, height, maxGenerations) {
     const DEAD = '-';
     const NEIGHBOUR_CACHE = new Map();
 
-    const isAlive = (i) => generation.has(String(i));
+    const isAlive = (i) => generation.has(i);
     const getCoordinates = (val, i) => {
         let coordinates = [i % width, Math.floor(i / width)];
         return String(coordinates);
     };
 
     let count = 0;
-    let generation = initial.reduce((all, cell) => all.set(String(cell), cell), new Map());
-    let allCoordinates = new Array(width * height).fill(0).map(getCoordinates);
+    let generation = new Set(initial.map(String));
+    let allCells = new Array(CELLS).fill(0).map(getCoordinates);
 
     function init() {
         draw();
@@ -28,17 +28,16 @@ function gameOfLife(initial, width, height, maxGenerations) {
             return all;
         };
 
-        let allNeighbours = [...generation.values()].reduce(getAllUniqueNeighbours, new Set());
+        let allNeighbours = [...generation].reduce(getAllUniqueNeighbours, new Set());
 
-        generation = [...allNeighbours].reduce((all, cell) => {
-            let neighbours = (NEIGHBOUR_CACHE.get(String(cell)) || getNeighbours(cell));
-            let aliveNeighbours = neighbours.filter(isAlive).length;
+        generation = new Set([...allNeighbours].filter((cellString) => {
+            let aliveNeighbours = getNeighbours(cellString).filter(isAlive).length;
 
-            let survive = aliveNeighbours === 2 && isAlive(cell);
+            let survive = aliveNeighbours === 2 && isAlive(cellString);
             let reproduce = aliveNeighbours === 3;
 
-            return (survive || reproduce) ? all.set(String(cell), cell) : all
-        }, new Map());
+            return (survive || reproduce)
+        }));
 
         draw();
 
@@ -48,9 +47,10 @@ function gameOfLife(initial, width, height, maxGenerations) {
     }
 
     function getNeighbours(cell) {
-        let [x, y] = cell;
-
-        const takeStep = ([stepX, stepY]) => [x + stepX, y + stepY];
+        const takeStep = ([stepX, stepY]) =>  {
+            let [x, y] = cell.split(',').map(Number);
+            return String([x + stepX, y + stepY]);
+        };
         const directions = [
             [-1,-1],
             [-1, 0],
@@ -62,21 +62,27 @@ function gameOfLife(initial, width, height, maxGenerations) {
             [ 1, 1]
         ];
 
-        let neighbours = NEIGHBOUR_CACHE.get(String(cell));
+        let neighbours = NEIGHBOUR_CACHE.get(cell);
 
         if(!neighbours) {
             neighbours = directions.map(takeStep);
-            NEIGHBOUR_CACHE.set(String([cell]), neighbours);
+            NEIGHBOUR_CACHE.set(cell, neighbours);
         }
 
         return neighbours;
     }
 
     function draw() {
+        //const cellSet = new Set(generation);
+
         let board = '';
 
-        for (let i = 0; i < CELLS; i++) {
-            board += generation.has(allCoordinates[i]) ? ALIVE : DEAD;
+
+        for(let i = 0; i < CELLS; i++) {
+            let cell = allCells[i];
+
+            if(generation.has(cell)) board +=  ALIVE ;
+            else board += DEAD;
 
             if ((i + 1) % width === 0) {
                 board += "\n";
