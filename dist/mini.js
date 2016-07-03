@@ -83,7 +83,7 @@ function gameOfLife(initial, width, height, maxGenerations) {
             }
         }
 
-        document.body.innerText = board;
+        document.body.innerHTML = `<pre>${board}</pre>`;
     }
 
     start();
