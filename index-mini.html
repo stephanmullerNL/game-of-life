@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <style>
+            body {
+                font-family: monospace;
+                margin: 0 0 10px;
+                font-size: 13px;
+                line-height: 1;
+                word-break: break-all;
+                word-wrap: break-word;
+            }
+        </style>
+    </head>
+    <body>
+        <script src="dist/mini.js"></script>
+        <script>
+            let initial = [
+                    '25,25',
+                    '26,25',
+                    '25,26',
+                    '24,26',
+                    '25,27'
+            ];
+
+            gameOfLife(initial, 100, 100, 400);
+        </script>
+    </body>
+</html>

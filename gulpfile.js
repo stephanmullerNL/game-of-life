@@ -30,6 +30,11 @@ var js = {
     dist: 'dist/'
 };
 
+var jsMini = {
+    src: 'src/mini/mini.js',
+    dist: 'dist/'
+};
+
 var css = {
     src: 'src/',
     main: 'main.css',
@@ -92,17 +97,31 @@ gulp.task('js-prod', function () {
 
 });
 
+gulp.task('js-mini', ['sync'], function () {
+    gulp.src(jsMini.src)
+        .pipe(hint('.jshintrc'))
+        .pipe(hint.reporter(stylish));
+
+    gulp.watch(jsMini.src, ['js-mini']);
+
+    return gulp.src(jsMini.src)
+        .pipe(gulp.dest(jsMini.dist))
+        .pipe(reload({stream: true}));
+});
+
 gulp.task('css', function () {
 
     gulp.src(css.src + css.main)
         .pipe(gulp.dest(css.dist));
 });
 
-// Task - Devolopment
+// Task - Development
 gulp.task('dev', ['js-dev']);
 
 // Task - Production
 gulp.task('prod', ['js-prod']);
+
+gulp.task('mini', ['js-mini']);
 
 // Task - Watch
 gulp.task('watch', ['sync'], function () {
