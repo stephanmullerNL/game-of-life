@@ -9,11 +9,13 @@ const STEPS = [
     [ 1,  0],
     [ 1,  1]
 ];
+const GENERATION_TIMEOUT = 25;
 
 let tiles = new Map();
 let stopped = false;
 let timeout;
 let onStopCallback;
+
 
 module.exports = class {
 
@@ -42,11 +44,11 @@ module.exports = class {
 
         this.drawGeneration();
 
-        timeout = setTimeout(this.live.bind(this), 1000);
+        timeout = setTimeout(this.live.bind(this), GENERATION_TIMEOUT);
     }
 
     reset() {
-        let pattern = this.firstGeneration.map(this.toIndex.bind(this));;
+        let pattern = this.firstGeneration.map(this.toIndex.bind(this));
 
         tiles.forEach((tile) => {
             tile.alive = false;
@@ -85,7 +87,7 @@ module.exports = class {
             onStopCallback();
 
         } else {
-            timeout = setTimeout(this.live.bind(this), 250);
+            timeout = setTimeout(this.live.bind(this), GENERATION_TIMEOUT);
         }
     }
 
