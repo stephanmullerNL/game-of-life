@@ -8,269 +8,274 @@ const STEPS = [
     [ 1,  0],
     [ 1,  1]
 ];
-const GENERATION_TIMEOUT = 10;
+const GENERATION_TIMEOUT = 1000;
 
 let tiles = new Map();
 let stopped = false;
 let timeout;
 let onStopCallback;
+let count = 0;
 
+init();
 
-module.exports = class {
+module.exports = {
+    start: start,
+    reset: reset,
+    stop: stop,
+    onStopped: onStopped
+};
+// TODO: Make entirely functional, move all DOM logic somewhere else
+function init(element, width, height, imported) {
+    this.element = element;
 
-    // TODO: Make entirely functional, move all DOM logic somewhere else
-    constructor(element, width, height, imported) {
-        this.element = element;
+    this.width = width;
+    this.height = height;
 
-        this.width = width;
-        this.height = height;
+    this.elements = [];
+    this.generation = [];
+    this._previousGeneration = [];
 
-        this.elements = [];
-        this.generation = [];
-        this._previousGeneration = [];
+    createGame(imported);
+}
 
-        this.createGame(imported);
-    }
+/*** Controls ***/
+function start() {
+    stopped = false;
+    this.element.classList.add('active');
 
-    /*** Controls ***/
-    start() {
-        stopped = false;
-        this.element.classList.add('active');
+    // TODO: Work with checkpoints
+    this.generation = this.firstGeneration = this.getFirstGeneration();
+    this.generation.forEach((tile) => tile.alive = true);
 
-        // TODO: Work with checkpoints
-        this.generation = this.firstGeneration = this.getFirstGeneration();
-        this.generation.forEach((tile) => tile.alive = true);
+    this.drawGeneration();
 
-        this.drawGeneration();
+    timeout = setTimeout(this.live.bind(this), GENERATION_TIMEOUT);
+}
 
+function reset() {
+    let pattern = this.firstGeneration.map(this.toIndex.bind(this));
+
+    tiles.forEach((tile) => {
+        tile.alive = false;
+    });
+
+    this._previousGeneration = [];
+    this.createGame(pattern);
+}
+
+function stop() {
+    clearTimeout(timeout);
+
+    stopped = true;
+    this.element.classList.remove('active');
+}
+
+function onStopped(fn) {
+    onStopCallback = fn;
+}
+
+/*** Game ***/
+function live() {
+    this._previousGeneration = this.generation;
+    this.generation = this.nextGeneration();
+
+    this._previousGeneration.forEach((tile) => tile.alive = false);
+    this.generation.forEach((tile) => tile.alive = true);
+
+    this.drawGeneration();
+
+    if (stopped || count++ > 400) {
+        console.log('Game stopped by user');
+
+    } else if (this.isUnchanged()) {
+        console.log('Equilibrium reached, aborting');
+        onStopCallback();
+
+    } else {
         timeout = setTimeout(this.live.bind(this), GENERATION_TIMEOUT);
     }
+}
 
-    reset() {
-        let pattern = this.firstGeneration.map(this.toIndex.bind(this));
+function nextGeneration() {
+    const uniqueNeighbours = this.generation.reduce(this.getAllNeighbours.bind(this), new Set());
 
-        tiles.forEach((tile) => {
-            tile.alive = false;
+    return [...uniqueNeighbours].filter(this.getNextGeneration.bind(this));
+}
+
+function isUnchanged() {
+    const isVisible = (tile) => tile.visible;
+    const hash = (list) => {
+        let coords = list.filter(isVisible).map((item) => item.coordinates);
+        return String(coords);
+    };
+
+    return hash(this._previousGeneration) === hash(this.generation);
+}
+
+/*** Tiles ***/
+function createTile(x, y) {
+    let index = String([x, y]);
+
+    let tile = {
+        alive: false,
+        coordinates: [x, y],
+        neighbours: [],
+        visible: x > -1 && x < this.width && y > -1 && y < this.height
+    };
+
+    tiles.set(index, tile);
+
+    return tile;
+}
+
+function getTile(x, y) {
+    return tiles.get( String([x,y]) );
+}
+
+function getNextGeneration(currentTile) {
+    let aliveNeighbours = this.getNeighbours(currentTile).filter(this.isAlive.bind(this));
+
+    const survive = aliveNeighbours.length === 2 && this.isAlive(currentTile);
+    const reproduce = aliveNeighbours.length === 3;
+
+    return survive || reproduce;
+}
+
+function getAllNeighbours(all, tile) {
+    this.getNeighbours(tile).forEach((neighbour) => {
+        all.add(neighbour);
+    });
+
+    return all;
+}
+
+function getNeighbours(from) {
+    let [fromX, fromY] = from.coordinates;
+
+    const getOrCreateNeighbour = ([x, y]) => {
+        let newX = fromX + x;
+        let newY = fromY + y;
+
+        return this.getTile(newX, newY) || this.createTile(newX, newY);
+    };
+
+    if (!from.neighbours.length) {
+        from.neighbours = STEPS.map((step) => {
+            return getOrCreateNeighbour(step);
         });
-
-        this._previousGeneration = [];
-        this.createGame(pattern);
     }
 
-    stop() {
-        clearTimeout(timeout);
+    return from.neighbours;
+}
 
-        stopped = true;
-        this.element.classList.remove('active');
+function isAlive(tile) {
+    return tile.alive;
+}
+
+function toIndex(tile) {
+    let [x, y] = tile.coordinates;
+    return x + y * this.width;
+}
+
+// TODO: Move to separate class
+/*** Render game ***/
+function createGame(pattern = []) {
+    this.element.innerHTML = '';
+    this.elements = [];
+
+    for(let i = 0; i < this.width * this.height; i++) {
+        let checkbox = document.createElement('input');
+        let label = document.createElement('label');
+
+        checkbox.type = 'checkbox';
+        checkbox.id = i;
+        checkbox.checked = pattern.indexOf(i) > -1;
+
+        label.setAttribute('for', i);
+
+        this.element.appendChild(checkbox);
+        this.element.appendChild(label);
+
+        this.elements.push(checkbox);
+    }
+}
+
+function drawGeneration() {
+    this._previousGeneration
+        .filter((tile) => tile.visible)
+        .forEach((tile) => this.setState(tile, 'visited'));
+
+    this.generation
+        .filter((tile) => tile.visible)
+        .forEach((tile) => this.setState(tile, 'alive'));
+}
+
+function exportTiles() {
+    return this.elements
+        .filter((tile) => tile.checked)
+        .map((tile) => Number(tile.id))
+        .join(',');
+}
+
+function getFirstGeneration() {
+    const isChecked = (element) => {
+        return element.checked;
+    };
+    const createTile = (coordinates) => {
+        return tiles.get(String(coordinates)) || this.createTile(...coordinates);
+    };
+    const getCoordinates = (element) => {
+        let id = Number(element.id);
+        return [id % this.width, Math.floor(id / this.width)];
+    };
+
+    return this.elements
+        .filter(isChecked)
+        .map(getCoordinates)
+        .map(createTile);
+}
+
+function setState(tile, state) {
+    const index = this.toIndex(tile);
+    const element = this.elements[index];
+
+    if (!element) {
+        return;
     }
 
-    onStopped(fn) {
-        onStopCallback = fn;
+    switch(state) {
+        case 'alive':
+            element.checked = true;
+            element.indeterminate = false;
+            break;
+        case 'visited':
+            element.indeterminate = true;
+        // no break
+        case 'dead':
+        default:
+            element.checked = false;
     }
-
-    /*** Game ***/
-    live() {
-        this._previousGeneration = this.generation;
-        this.generation = this.nextGeneration();
-
-        this._previousGeneration.forEach((tile) => tile.alive = false);
-        this.generation.forEach((tile) => tile.alive = true);
-
-        this.drawGeneration();
-
-        if (stopped) {
-            console.log('Game stopped by user');
-
-        } else if (this.isUnchanged()) {
-            console.log('Equilibrium reached, aborting');
-            onStopCallback();
-
-        } else {
-            timeout = setTimeout(this.live.bind(this), GENERATION_TIMEOUT);
-        }
-    }
-
-    nextGeneration() {
-        const uniqueNeighbours = this.generation.reduce(this.getAllNeighbours.bind(this), new Set());
-
-        return [...uniqueNeighbours].filter(this.getNextGeneration.bind(this));
-    }
-
-    isUnchanged() {
-        const isVisible = (tile) => tile.visible;
-        const hash = (list) => {
-            let coords = list.filter(isVisible).map((item) => item.coordinates);
-            return String(coords);
-        };
-
-        return hash(this._previousGeneration) === hash(this.generation);
-    }
-
-    /*** Tiles ***/
-    createTile(x, y) {
-        let index = String([x, y]);
-
-        let tile = {
-            alive: false,
-            coordinates: [x, y],
-            neighbours: [],
-            visible: x > -1 && x < this.width && y > -1 && y < this.height
-        };
-
-        tiles.set(index, tile);
-
-        return tile;
-    }
-
-    getTile(x, y) {
-        return tiles.get( String([x,y]) );
-    }
-
-    getNextGeneration(currentTile) {
-        let aliveNeighbours = this.getNeighbours(currentTile).filter(this.isAlive.bind(this));
-
-        const survive = aliveNeighbours.length === 2 && this.isAlive(currentTile);
-        const reproduce = aliveNeighbours.length === 3;
-
-        return survive || reproduce;
-    }
-
-    getAllNeighbours(all, tile) {
-        this.getNeighbours(tile).forEach((neighbour) => {
-            all.add(neighbour);
-        });
-
-        return all;
-    }
-
-    getNeighbours(from) {
-        let [fromX, fromY] = from.coordinates;
-
-        const getOrCreateNeighbour = ([x, y]) => {
-            let newX = fromX + x;
-            let newY = fromY + y;
-
-            return this.getTile(newX, newY) || this.createTile(newX, newY);
-        };
-
-        if (!from.neighbours.length) {
-            from.neighbours = STEPS.map((step) => {
-                return getOrCreateNeighbour(step);
-            });
-        }
-
-        return from.neighbours;
-    }
-
-    isAlive(tile) {
-        return tile.alive;
-    }
-
-    toIndex(tile) {
-        let [x, y] = tile.coordinates;
-        return x + y * this.width;
-    }
-
-    // TODO: Move to separate class
-    /*** Render game ***/
-    createGame(pattern = []) {
-        this.element.innerHTML = '';
-        this.elements = [];
-
-        for(let i = 0; i < this.width * this.height; i++) {
-            let checkbox = document.createElement('input');
-            let label = document.createElement('label');
-
-            checkbox.type = 'checkbox';
-            checkbox.id = i;
-            checkbox.checked = pattern.indexOf(i) > -1;
-
-            label.setAttribute('for', i);
-
-            this.element.appendChild(checkbox);
-            this.element.appendChild(label);
-
-            this.elements.push(checkbox);
-        }
-    }
-
-    drawGeneration() {
-        this._previousGeneration
-            .filter((tile) => tile.visible)
-            .forEach((tile) => this.setState(tile, 'visited'));
-
-        this.generation
-            .filter((tile) => tile.visible)
-            .forEach((tile) => this.setState(tile, 'alive'));
-    }
-
-    exportTiles() {
-        return this.elements
-            .filter((tile) => tile.checked)
-            .map((tile) => Number(tile.id))
-            .join(',');
-    }
-
-    getFirstGeneration() {
-        const isChecked = (element) => {
-            return element.checked;
-        };
-        const createTile = (coordinates) => {
-            return tiles.get(String(coordinates)) || this.createTile(...coordinates);
-        };
-        const getCoordinates = (element) => {
-            let id = Number(element.id);
-            return [id % this.width, Math.floor(id / this.width)];
-        };
-
-        return this.elements
-            .filter(isChecked)
-            .map(getCoordinates)
-            .map(createTile);
-    }
-
-    setState(tile, state) {
-        const index = this.toIndex(tile);
-        const element = this.elements[index];
-
-        if (!element) {
-            return;
-        }
-
-        switch(state) {
-            case 'alive':
-                element.checked = true;
-                element.indeterminate = false;
-                break;
-            case 'visited':
-                element.indeterminate = true;
-            // no break
-            case 'dead':
-            default:
-                element.checked = false;
-        }
-    }
+}
 
 
-    drawMirrorMode() {
-        [...document.querySelectorAll('input')].forEach((el) => {
-            el.addEventListener('click', (ev) => {
-                let id = Number(ev.target.id);
-                let [x, y] = [id % 41, Math.floor(id / 41)];
-                let mirror = [
-                    [40 - x, y],
-                    [x, 40 - y],
-                    [40 - x, 40 - y]
-                ];
-                mirror.map(([x, y]) => x + y * 41).forEach((id) => {
-                    document.getElementById(id).checked = ev.target.checked;
-                })
+function drawMirrorMode() {
+    [...document.querySelectorAll('input')].forEach((el) => {
+        el.addEventListener('click', (ev) => {
+            let id = Number(ev.target.id);
+            let [x, y] = [id % 41, Math.floor(id / 41)];
+            let mirror = [
+                [40 - x, y],
+                [x, 40 - y],
+                [40 - x, 40 - y]
+            ];
+            mirror.map(([x, y]) => x + y * 41).forEach((id) => {
+                document.getElementById(id).checked = ev.target.checked;
             })
-        });
-    }
+        })
+    });
+}
 
-    resize(x) {
-        let y = x.map(i => (i % 41) + (Math.floor(i / 41) * 99)).join(',');
-        let z = y.split(',').map(i => (i % 99) + 29 + (Math.floor(i / 99) + 29) * 99 ).join(',');
-    }
-};
+function resize(x) {
+    let y = x.map(i => (i % 41) + (Math.floor(i / 41) * 99)).join(',');
+    let z = y.split(',').map(i => (i % 99) + 29 + (Math.floor(i / 99) + 29) * 99 ).join(',');
+}

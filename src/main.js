@@ -34,7 +34,7 @@
 
         elements.exportButton.addEventListener('click', exportState);
 
-        create();
+        //create();
     }
 
     function create() {
@@ -43,7 +43,7 @@
         let importTiles = elements.import.value.split(',').map(Number);
 
         // todo: customize dimensions
-        game = new Game(elements.game, 99, 99, importTiles);
+        game = new Game(elements.game, 50, 50, importTiles);
 
         game.onStopped(stop);
 
