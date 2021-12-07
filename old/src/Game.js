@@ -16,7 +16,7 @@ let timeout;
 let onStopCallback;
 
 
-module.exports = class {
+window.Game = class {
 
     // TODO: Make entirely functional, move all DOM logic somewhere else
     constructor(element, width, height, imported) {

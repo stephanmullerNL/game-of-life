@@ -29,7 +29,7 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": ["./old/src/Game.js", "./old/src/main.js" ]
           },
           "configurations": {
             "production": {

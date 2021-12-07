@@ -1,1 +1,76 @@
 /* You can add global styles to this file, and also import other style files */
+main {
+    font-size: 10px;
+    margin: 0 auto;
+    min-width: 44em;
+    max-width: 80em;
+    padding: 2em;
+}
+
+/*** Controls ***/
+section {
+    background: #eee;
+    border: 1px solid #999;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    margin: 1em 0;
+    padding: 1em;
+}
+
+textarea {
+    margin: .2em 0 .5em;
+    width: 100%;
+}
+
+/*** Game area ***/
+#game {
+    border: solid black;
+    border-width: 0 1px 1px 0;
+    display: block;
+    margin: 0 auto;
+    overflow: auto;
+    width: 44em;
+}
+
+#game.active {
+    pointer-events: none;
+}
+
+
+input[type=checkbox] {
+    position: absolute;
+    opacity: 0;
+}
+
+label {
+    border: solid black;
+    border-width: 1px 0 0 1px;
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+}
+
+input:indeterminate + label {
+    background: #ccc;
+}
+
+input:checked + label {
+    background: black;
+}
+
+/*** Other ***/
+footer {
+    background: #eee;
+    font-size: 1.6em;
+    margin-top: 1em;
+    padding: .5em;
+}
+
+.clearfix:before,
+.clearfix:after {
+    content: " ";
+    display: table;
+}
+
+.clearfix:after {
+    clear: both;
+}

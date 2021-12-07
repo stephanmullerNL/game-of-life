@@ -1,31 +1,29 @@
 (function () {
-
-    const Game = require('./Game.js');
-
-    const elements = {
-        game: document.getElementById('game'),
-
-        // Create
-        height: document.getElementById('height'),
-        width: document.getElementById('width'),
-        createButton: document.getElementById('create'),
-
-        // Play
-        startButton: document.getElementById('start'),
-        stopButton: document.getElementById('stop'),
-
-        clearButton: document.getElementById('clear'),
-        resetButton: document.getElementById('reset'),
-
-        // Other
-        import: document.getElementById('import'),
-        export: document.getElementById('export'),
-        exportButton: document.getElementById('exportButton')
-    };
-
     let game;
+    let elements;
 
     function init() {
+        elements = {
+            game: document.getElementById('game'),
+
+            // Create
+            height: document.getElementById('height'),
+            width: document.getElementById('width'),
+            createButton: document.getElementById('create'),
+
+            // Play
+            startButton: document.getElementById('start'),
+            stopButton: document.getElementById('stop'),
+
+            clearButton: document.getElementById('clear'),
+            resetButton: document.getElementById('reset'),
+
+            // Other
+            import: document.getElementById('import'),
+            export: document.getElementById('export'),
+            exportButton: document.getElementById('exportButton')
+        };
+
         elements.createButton.addEventListener('click', create);
         elements.resetButton.addEventListener('click', reset);
 
@@ -43,7 +41,7 @@
         let importTiles = elements.import.value.split(',').map(Number);
 
         // todo: customize dimensions
-        game = new Game(elements.game, 40, 40, importTiles);
+        game = new window.Game(elements.game, 40, 40, importTiles);
 
         game.onStopped(stop);
 
@@ -90,5 +88,5 @@
         element.removeAttribute('disabled');
     }
 
-    init();
+    window.initGame = init
 }());
